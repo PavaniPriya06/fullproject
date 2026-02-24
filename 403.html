@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>403 — Access Forbidden | DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        /* ── Forbidden page layout ── */
+        .forbidden-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--sp-8) var(--sp-4);
+        }
+
+        /* ── Card ── */
+        .forbidden-card {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,107,157,0.25);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg), 0 0 60px rgba(255,107,157,0.08);
+            padding: 2.75rem 2.5rem;
+            text-align: center;
+            animation: cardIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(28px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        }
+
+        /* ── Shield icon ── */
+        .shield-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255,107,157,0.20), rgba(220,50,90,0.15));
+            border: 2px solid rgba(255,107,157,0.50);
+            font-size: 2.5rem;
+            margin-bottom: var(--sp-5);
+        }
+
+        /* ── Error code ── */
+        .error-code {
+            font-family: var(--font-heading);
+            font-size: clamp(3.5rem, 12vw, 6rem);
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: var(--sp-3);
+            background: linear-gradient(135deg, #ff6b9d, #e0346c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Heading ── */
+        .forbidden-heading {
+            font-family: var(--font-heading);
+            font-size: clamp(1.2rem, 4vw, 1.6rem);
+            font-weight: 800;
+            color: var(--clr-text);
+            margin-bottom: var(--sp-3);
+        }
+
+        .forbidden-sub {
+            font-size: var(--fs-sm);
+            color: var(--clr-text-2);
+            line-height: 1.7;
+            margin-bottom: var(--sp-8);
+        }
+
+        /* ── Divider ── */
+        .forbidden-divider {
+            height: 1px;
+            background: var(--clr-border);
+            margin: var(--sp-6) 0;
+        }
+
+        /* ── Countdown ── */
+        .countdown-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--sp-2);
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            margin-bottom: var(--sp-5);
+        }
+
+        .countdown-num {
+            font-weight: 700;
+            color: #ff6b9d;
+            font-variant-numeric: tabular-nums;
+            min-width: 18px;
+        }
+
+        /* ── Action row ── */
+        .forbidden-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-3);
+        }
+
+        @media (min-width: 400px) {
+            .forbidden-actions { flex-direction: row; }
+            .forbidden-actions .btn { flex: 1; }
+        }
+    </style>
+</head>
+
+<body class="page-wrapper" style="align-items:center; justify-content:center;">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="forbidden-wrapper" style="position:relative; z-index:1;">
+
+        <!-- Brand link -->
+        <a href="dashboard.html"
+           style="display:inline-flex; align-items:center; gap:var(--sp-2);
+                  margin-bottom:var(--sp-8); color:var(--clr-text-2);
+                  font-size:var(--fs-sm); font-weight:600;
+                  transition:color var(--t-fast);"
+           onmouseover="this.style.color='var(--clr-text)'"
+           onmouseout="this.style.color='var(--clr-text-2)'">
+            <div class="brand-icon" style="font-size:1.25rem; line-height:1;">💝</div>
+            <span class="text-gradient" style="font-family:var(--font-heading); font-size:1rem;">DonateHub</span>
+        </a>
+
+        <!-- Main card -->
+        <div class="forbidden-card">
+            <div class="shield-icon">🛡️</div>
+
+            <div class="error-code">403</div>
+            <h1 class="forbidden-heading">Access Forbidden</h1>
+
+            <p class="forbidden-sub">
+                You don't have permission to view this page.<br>
+                This area is restricted to administrators only.
+            </p>
+
+            <div class="countdown-row">
+                Redirecting to home in <span class="countdown-num" id="countdown">8</span> seconds…
+            </div>
+
+            <div class="forbidden-divider"></div>
+
+            <div class="forbidden-actions">
+                <a href="dashboard.html" class="btn btn-primary">
+                    ← Back to Home
+                </a>
+                <a href="login.html" class="btn btn-ghost">
+                    Sign In
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        /* Auto-redirect countdown */
+        var seconds = 8;
+        var el = document.getElementById('countdown');
+
+        var timer = setInterval(function () {
+            seconds -= 1;
+            if (el) el.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(timer);
+                var session = getSession();
+                /* If logged in, go to their home; otherwise go to login */
+                if (session) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    window.location.href = 'login.html';
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>

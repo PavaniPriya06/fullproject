@@ -1,0 +1,4 @@
+# OS-reserved or temp artifacts
+nul
+tmpclaude-*
+tmpclaude-*/

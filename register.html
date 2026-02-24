@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account — DonateHub</title>
+    <meta name="description" content="Join DonateHub and start changing lives today." />
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="center-layout">
+        <div class="glass-card auth-card fade-in-up">
+
+            <!-- Brand -->
+            <div class="brand">
+                <div class="brand-icon">💝</div>
+                <span class="brand-name text-gradient">DonateHub</span>
+            </div>
+
+            <h1 class="auth-title">Create account</h1>
+            <p class="auth-subtitle">Join thousands making a real difference</p>
+
+            <form id="registerForm" novalidate>
+
+                <!-- Full Name -->
+                <div class="form-group">
+                    <label class="form-label" for="fullName">Full Name</label>
+                    <div class="form-input-wrapper input-icon-left">
+                        <input id="fullName" type="text" class="form-input" placeholder="Jane Doe" autocomplete="name"
+                            required />
+                        <span class="form-input-icon">👤</span>
+                    </div>
+                    <span class="form-error" id="nameError"></span>
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <div class="form-input-wrapper input-icon-left">
+                        <input id="email" type="email" class="form-input" placeholder="you@example.com"
+                            autocomplete="email" required />
+                        <span class="form-input-icon">📧</span>
+                    </div>
+                    <span class="form-error" id="emailError"></span>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="form-input-wrapper input-icon-left" style="position:relative;">
+                        <input id="password" type="password" class="form-input" placeholder="Create a strong password"
+                            autocomplete="new-password" style="padding-right:3rem;" required />
+                        <span class="form-input-icon">🔒</span>
+                        <span class="toggle-password" id="togglePwd">👁️</span>
+                    </div>
+                    <!-- Strength meter -->
+                    <div class="pwd-strength">
+                        <div class="pwd-strength-bars">
+                            <span class="pwd-bar"></span>
+                            <span class="pwd-bar"></span>
+                            <span class="pwd-bar"></span>
+                            <span class="pwd-bar"></span>
+                        </div>
+                        <span class="pwd-strength-label text-subtle"></span>
+                    </div>
+                    <span class="form-error" id="passwordError"></span>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <div class="form-input-wrapper input-icon-left">
+                        <input id="confirmPassword" type="password" class="form-input"
+                            placeholder="Repeat your password" autocomplete="new-password" required />
+                        <span class="form-input-icon">🔑</span>
+                    </div>
+                    <span class="form-error" id="confirmError"></span>
+                </div>
+
+                <!-- Terms -->
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label class="form-check" for="terms">
+                        <input type="checkbox" id="terms" />
+                        <span class="check-box"></span>
+                        <span class="check-label">
+                            I agree to the <a href="#" class="auth-link">Terms of Service</a>
+                            and <a href="#" class="auth-link">Privacy Policy</a>
+                        </span>
+                    </label>
+                    <span class="form-error" id="termsError"></span>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" id="registerBtn" class="btn btn-primary">
+                    <div class="btn-spinner"></div>
+                    <span class="btn-label">Create My Account</span>
+                </button>
+
+            </form>
+
+            <div class="divider">or</div>
+
+            <div class="auth-link-row">
+                Already have an account?
+                <a href="login.html" class="auth-link">Sign in</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        redirectIfAuth();
+
+        const form = qs('#registerForm');
+        const nameIn = qs('#fullName');
+        const emailIn = qs('#email');
+        const passwordIn = qs('#password');
+        const confirmIn = qs('#confirmPassword');
+        const termsIn = qs('#terms');
+        const registerBtn = qs('#registerBtn');
+
+        /* Toggle password */
+        qs('#togglePwd').addEventListener('click', () => {
+            const isText = passwordIn.type === 'text';
+            passwordIn.type = isText ? 'password' : 'text';
+            qs('#togglePwd').textContent = isText ? '👁️' : '🙈';
+        });
+
+        /* Live strength meter */
+        passwordIn.addEventListener('input', () => {
+            clearFieldError(passwordIn);
+            updateStrengthBars(passwordIn.value);
+        });
+
+        /* Clear errors on change */
+        nameIn.addEventListener('input', () => clearFieldError(nameIn));
+        emailIn.addEventListener('input', () => clearFieldError(emailIn));
+        confirmIn.addEventListener('input', () => clearFieldError(confirmIn));
+
+        /* Submit */
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            let valid = true;
+
+            const name = nameIn.value.trim();
+            const email = emailIn.value.trim();
+            const pwd = passwordIn.value;
+            const confirm = confirmIn.value;
+
+            if (!name || name.length < 2) {
+                showFieldError(nameIn, 'Please enter your full name (min 2 characters).');
+                valid = false;
+            }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showFieldError(emailIn, 'Please enter a valid email address.');
+                valid = false;
+            }
+            if (!pwd || pwd.length < 6) {
+                showFieldError(passwordIn, 'Password must be at least 6 characters.');
+                valid = false;
+            }
+            if (pwd !== confirm) {
+                showFieldError(confirmIn, 'Passwords do not match.');
+                valid = false;
+            }
+            if (!termsIn.checked) {
+                const termsErr = qs('#termsError');
+                termsErr.textContent = 'You must agree to the terms to continue.';
+                termsErr.classList.add('visible');
+                valid = false;
+            } else {
+                qs('#termsError').classList.remove('visible');
+            }
+            if (!valid) return;
+
+            setLoading(registerBtn, true);
+            await new Promise(r => setTimeout(r, 700));
+
+            const result = registerUser(name, email, pwd);
+            if (result.success) {
+                showToast('Account created! Welcome, ' + result.user.fullName.split(' ')[0] + '! 🚀', 'success');
+                redirectTo('dashboard.html', 900);
+            } else {
+                setLoading(registerBtn, false);
+                showToast(result.message, 'error');
+                showFieldError(emailIn, result.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

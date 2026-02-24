@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║   REDIRECTOR — This page no longer hosts the admin portal.  ║
+  ║   Direct navigation here is intercepted and redirected.     ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting… | DonateHub</title>
+    <!-- Inline meta redirect as a secondary layer (JS is primary) -->
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=403.html" />
+    </noscript>
+</head>
+<body>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        /* ── Redirect gate ──────────────────────────────────────
+           Admins are forwarded to the protected gateway portal.
+           Everyone else (users or unauthenticated) goes to 403.
+        ────────────────────────────────────────────────────── */
+        (function () {
+            var session = getSession();
+            if (session && session.role === 'admin') {
+                window.location.replace('admin-gateway-portal.html');
+            } else {
+                window.location.replace('403.html');
+            }
+        })();
+    </script>
+</body>
+</html>

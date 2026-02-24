@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard — DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.1/styles/ag-grid.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.1/styles/ag-theme-alpine.css" />
+    <style>
+        [x-cloak] { display: none !important; }
+
+        /* ── Admin colour tokens ── */
+        :root {
+            --clr-admin:    #f59e0b;
+            --clr-admin-d:  #d97706;
+            --clr-approve:  #00d464;
+            --clr-reject:   #ff6b9d;
+            --clr-pending:  #ffa500;
+        }
+
+        /* ── Admin header accent ── */
+        .admin-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.40);
+            border-radius: var(--radius-full);
+            padding: 3px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            color: var(--clr-admin);
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Stats bar ── */
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: var(--sp-3);
+            margin-bottom: var(--sp-6);
+        }
+
+        .admin-stat {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-lg);
+            padding: var(--sp-4) var(--sp-5);
+            text-align: center;
+            transition: border-color var(--t-fast);
+        }
+        .admin-stat:hover { border-color: rgba(245,158,11,0.35); }
+
+        .admin-stat-value {
+            font-family: var(--font-heading);
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: var(--sp-1);
+        }
+
+        .admin-stat-label {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stat-total    .admin-stat-value { color: var(--clr-primary-l); }
+        .stat-pending  .admin-stat-value { color: var(--clr-pending); }
+        .stat-approved .admin-stat-value { color: var(--clr-approve); }
+        .stat-rejected .admin-stat-value { color: var(--clr-reject); }
+
+        /* ── Pending queue banner ── */
+        .pending-queue-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--sp-3);
+            padding: var(--sp-4) var(--sp-5);
+            background: rgba(255,165,0,0.08);
+            border: 1px solid rgba(255,165,0,0.35);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--sp-5);
+        }
+
+        .pending-queue-banner .pq-info {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-3);
+        }
+
+        .pending-dot-live {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--clr-pending);
+            animation: livePulse 1.5s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,165,0,0.5); }
+            50%       { opacity: 0.7; box-shadow: 0 0 0 6px rgba(255,165,0,0); }
+        }
+
+        .pq-count {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--clr-pending);
+            font-family: var(--font-heading);
+            line-height: 1;
+        }
+
+        .pq-label { font-size: var(--fs-sm); color: var(--clr-text-2); }
+
+        .refresh-info {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+        }
+
+        /* ── Toolbar ── */
+        .admin-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--sp-3);
+            margin-bottom: var(--sp-5);
+        }
+
+        .filter-select, .search-input {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            color: var(--clr-text);
+            padding: var(--sp-2) var(--sp-4);
+            font-size: var(--fs-sm);
+            outline: none;
+            transition: border-color var(--t-fast);
+        }
+        .filter-select { font-weight: 600; cursor: pointer; }
+        .filter-select:focus, .search-input:focus { border-color: var(--clr-admin); }
+        .search-input { flex: 1; min-width: 180px; }
+        .search-input::placeholder { color: var(--clr-text-3); }
+
+        /* ── Management table ── */
+        .mgmt-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--clr-border);
+            background: rgba(255,255,255,0.03);
+        }
+
+        .mgmt-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+
+        .mgmt-table thead th {
+            background: rgba(245,158,11,0.08);
+            color: var(--clr-text-2);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding: var(--sp-3) var(--sp-4);
+            text-align: left;
+            border-bottom: 1px solid var(--clr-border);
+            white-space: nowrap;
+        }
+
+        .mgmt-table tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background var(--t-fast);
+        }
+        .mgmt-table tbody tr:last-child  { border-bottom: none; }
+        .mgmt-table tbody tr:hover        { background: rgba(255,255,255,0.04); }
+        .mgmt-table tbody tr.row-pending  { border-left: 3px solid var(--clr-pending); }
+        .mgmt-table tbody tr.row-approved { border-left: 3px solid var(--clr-approve); }
+        .mgmt-table tbody tr.row-rejected { border-left: 3px solid var(--clr-reject); }
+
+        .mgmt-table tbody td {
+            padding: var(--sp-3) var(--sp-4);
+            vertical-align: middle;
+            color: var(--clr-text);
+        }
+
+        .id-cell {
+            font-family: 'Courier New', monospace;
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Type badge */
+        .type-badge {
+            display: inline-flex; align-items: center; gap: var(--sp-1);
+            border-radius: var(--radius-full); padding: 3px var(--sp-3);
+            font-size: var(--fs-xs); font-weight: 700; white-space: nowrap;
+        }
+        .type-badge.food    { background: rgba(108,99,255,0.18); color: var(--clr-primary-l); }
+        .type-badge.apparel { background: rgba(0,212,170,0.18);  color: var(--clr-accent-2);  }
+        .type-badge.money   { background: rgba(255,107,157,0.18); color: var(--clr-accent);   }
+
+        /* Approval status */
+        .approval-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            border-radius: var(--radius-full); padding: 3px var(--sp-3);
+            font-size: var(--fs-xs); font-weight: 700; white-space: nowrap;
+        }
+        .status-pending  { background: rgba(255,165,0,0.15);   color: var(--clr-pending); }
+        .status-approved { background: rgba(0,212,100,0.15);   color: var(--clr-approve); }
+        .status-rejected { background: rgba(255,107,157,0.15); color: var(--clr-reject);  }
+
+        .approval-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+        .status-pending  .approval-dot { background: var(--clr-pending); }
+        .status-approved .approval-dot { background: var(--clr-approve); }
+        .status-rejected .approval-dot { background: var(--clr-reject);  }
+
+        /* Rejection reason pill */
+        .rejection-reason {
+            font-size: var(--fs-xs);
+            color: var(--clr-reject);
+            background: rgba(255,107,157,0.08);
+            border: 1px solid rgba(255,107,157,0.25);
+            border-radius: var(--radius-sm);
+            padding: 2px var(--sp-2);
+            margin-top: var(--sp-1);
+            display: inline-block;
+            max-width: 200px;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            border: 1px solid transparent; border-radius: var(--radius-md);
+            padding: 4px var(--sp-3); font-size: var(--fs-xs); font-weight: 700;
+            cursor: pointer; transition: all var(--t-fast); background: transparent;
+            white-space: nowrap;
+        }
+        .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .btn-approve { color: var(--clr-approve); border-color: rgba(0,212,100,0.35); }
+        .btn-approve:not(:disabled):hover { background: rgba(0,212,100,0.12); border-color: var(--clr-approve); }
+
+        .btn-reject  { color: var(--clr-reject);  border-color: rgba(255,107,157,0.35); }
+        .btn-reject:not(:disabled):hover  { background: rgba(255,107,157,0.12); border-color: var(--clr-reject); }
+
+        .btn-edit    { color: var(--clr-admin);   border-color: rgba(245,158,11,0.35); }
+        .btn-edit:not(:disabled):hover    { background: rgba(245,158,11,0.10);  border-color: var(--clr-admin); }
+
+        .btn-delete  { color: var(--clr-text-3);  border-color: rgba(255,255,255,0.12); }
+        .btn-delete:hover { background: rgba(255,80,80,0.10); border-color: rgba(255,80,80,0.40); color:#ff5050; }
+
+        /* User cell */
+        .user-name  { font-weight:600; margin-bottom:1px; font-size:var(--fs-sm); }
+        .user-email { font-size:var(--fs-xs); color:var(--clr-text-3); font-family:'Courier New',monospace; }
+
+        .actions-cell { display:flex; flex-wrap:wrap; gap:var(--sp-2); min-width:220px; }
+
+        /* Empty state */
+        .empty-state { text-align:center; padding:var(--sp-12) var(--sp-4); }
+        .empty-state .empty-icon { font-size:3rem; margin-bottom:var(--sp-3); }
+        .empty-state p { color:var(--clr-text-3); font-size:var(--fs-sm); }
+
+        /* Row count */
+        .row-count { font-size:var(--fs-xs); color:var(--clr-text-3); margin-left:auto; }
+
+        /* ── Inventory Overview ── */
+        .inventory-section {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-xl);
+            padding: var(--sp-6) var(--sp-6);
+            margin-top: var(--sp-8);
+        }
+
+        .inventory-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--clr-approve);
+            margin-bottom: var(--sp-5);
+            display: flex;
+            align-items: center;
+            gap: var(--sp-2);
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--sp-4);
+        }
+
+        .inv-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-lg);
+            padding: var(--sp-4) var(--sp-5);
+            text-align: center;
+            transition: border-color var(--t-fast);
+        }
+        .inv-card:hover { border-color: rgba(0,212,100,0.35); }
+
+        .inv-card-icon { font-size: 1.75rem; margin-bottom: var(--sp-2); line-height: 1; }
+        .inv-card-value {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--clr-approve);
+            line-height: 1;
+            margin-bottom: var(--sp-1);
+        }
+        .inv-card-label {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .inv-clothes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--sp-3);
+            margin-top: var(--sp-4);
+        }
+
+        .inv-clothes-card {
+            background: rgba(0,212,170,0.06);
+            border: 1px solid rgba(0,212,170,0.20);
+            border-radius: var(--radius-md);
+            padding: var(--sp-3) var(--sp-4);
+            text-align: center;
+        }
+
+        .inv-clothes-count {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--clr-accent-2);
+        }
+
+        .inv-clothes-label { font-size: var(--fs-xs); color: var(--clr-text-3); margin-top: 2px; }
+
+        .inv-empty { color: var(--clr-text-3); font-size: var(--fs-sm); text-align: center; padding: var(--sp-6); }
+
+        /* ── Modals ── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(0,0,0,0.65);
+            display: flex; align-items: center; justify-content: center;
+            padding: var(--sp-4);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-card {
+            width: 100%; max-width: 480px;
+            background: var(--clr-surface, #1a1a2e);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            animation: modalEntrance 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+
+        @keyframes modalEntrance {
+            from { opacity:0; transform:scale(0.92) translateY(16px); }
+            to   { opacity:1; transform:scale(1)    translateY(0);    }
+        }
+
+        .modal-title {
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: var(--sp-5);
+        }
+
+        .modal-field-label {
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            color: var(--clr-text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: var(--sp-2);
+            display: block;
+        }
+
+        .modal-input, .modal-select, .modal-textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            color: var(--clr-text);
+            padding: var(--sp-3) var(--sp-4);
+            font-size: var(--fs-sm);
+            outline: none;
+            transition: border-color var(--t-fast);
+            margin-bottom: var(--sp-4);
+            box-sizing: border-box;
+        }
+        .modal-textarea { min-height: 90px; resize: vertical; font-family: inherit; line-height: 1.6; }
+        .modal-input:focus, .modal-select:focus, .modal-textarea:focus { border-color: var(--clr-reject); }
+
+        .modal-error {
+            color: var(--clr-reject);
+            font-size: var(--fs-xs);
+            margin-bottom: var(--sp-4);
+            padding: var(--sp-2) var(--sp-3);
+            background: rgba(255,107,157,0.08);
+            border-radius: var(--radius-sm);
+        }
+
+        .modal-actions { display:flex; gap:var(--sp-3); margin-top:var(--sp-2); }
+
+        .btn-modal-save {
+            flex: 2;
+            border: none; border-radius: var(--radius-md);
+            padding: var(--sp-3) var(--sp-5);
+            font-size: var(--fs-sm); font-weight: 700;
+            cursor: pointer; transition: opacity var(--t-fast);
+        }
+        .btn-modal-save:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-modal-save:not(:disabled):hover { opacity:0.88; }
+        .btn-modal-save.save-reject { background:linear-gradient(135deg,#ff6b9d,#e0346c); color:#fff; }
+        .btn-modal-save.save-edit   { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; }
+
+        .btn-modal-cancel {
+            flex: 1;
+            background: transparent; color: var(--clr-text-2);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: var(--sp-3) var(--sp-5);
+            font-size: var(--fs-sm); font-weight: 700;
+            cursor: pointer; transition: all var(--t-fast);
+        }
+        .btn-modal-cancel:hover { border-color:var(--clr-text-2); color:var(--clr-text); }
+
+        /* ── AG Grid dark theme overrides ── */
+        .ag-theme-dms {
+            --ag-background-color:                 rgba(255,255,255,0.02);
+            --ag-odd-row-background-color:         rgba(255,255,255,0.02);
+            --ag-header-background-color:          rgba(245,158,11,0.08);
+            --ag-row-hover-color:                  rgba(255,255,255,0.05);
+            --ag-selected-row-background-color:    rgba(108,99,255,0.15);
+            --ag-border-color:                     rgba(255,255,255,0.08);
+            --ag-header-foreground-color:          var(--clr-text-2, #a0a0b8);
+            --ag-foreground-color:                 var(--clr-text, #e8e8f0);
+            --ag-secondary-foreground-color:       var(--clr-text-3, #6b6b8a);
+            --ag-font-size:                        13px;
+            --ag-font-family:                      'Inter', sans-serif;
+            --ag-cell-horizontal-padding:          14px;
+            --ag-row-height:                       58px;
+            --ag-header-height:                    44px;
+            --ag-borders:                          solid 1px;
+            --ag-border-radius:                    0;
+            --ag-wrapper-border-radius:            var(--radius-lg, 12px);
+            --ag-pagination-background-color:      rgba(255,255,255,0.03);
+            --ag-control-panel-background-color:   rgba(255,255,255,0.04);
+            --ag-input-focus-border-color:         var(--clr-admin, #f59e0b);
+            --ag-range-selection-border-color:     var(--clr-admin, #f59e0b);
+            --ag-column-hover-color:               rgba(255,255,255,0.02);
+        }
+
+        /* Row status left-border accents */
+        .ag-theme-dms .ag-row.row-pending  { border-left: 3px solid var(--clr-pending,  #ffa500); }
+        .ag-theme-dms .ag-row.row-approved { border-left: 3px solid var(--clr-approve, #00d464); }
+        .ag-theme-dms .ag-row.row-rejected { border-left: 3px solid var(--clr-reject,  #ff6b9d); }
+
+        /* Header text uppercase to match old table */
+        .ag-theme-dms .ag-header-cell-text {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+
+        /* Pagination bar dark style */
+        .ag-theme-dms .ag-paging-panel {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            color: var(--clr-text-2, #a0a0b8);
+            font-size: 12px;
+        }
+        .ag-theme-dms .ag-paging-button { color: var(--clr-text-2, #a0a0b8); }
+        .ag-theme-dms .ag-paging-button:not(.ag-disabled):hover { color: var(--clr-admin, #f59e0b); }
+
+        /* ── High-visibility action buttons ── */
+        .btn-lg-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border-radius: var(--radius-md, 8px);
+            padding: 5px 11px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--t-fast, 0.15s);
+            border: 1px solid transparent;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+        .btn-lg-action:disabled { opacity: 0.28; cursor: not-allowed; }
+
+        .btn-lg-approve {
+            background: rgba(0,212,100,0.18);
+            border-color: rgba(0,212,100,0.50);
+            color: #00d464;
+        }
+        .btn-lg-approve:not(:disabled):hover {
+            background: rgba(0,212,100,0.30);
+            box-shadow: 0 0 10px rgba(0,212,100,0.22);
+        }
+
+        .btn-lg-reject {
+            background: rgba(255,107,157,0.18);
+            border-color: rgba(255,107,157,0.50);
+            color: #ff6b9d;
+        }
+        .btn-lg-reject:not(:disabled):hover {
+            background: rgba(255,107,157,0.30);
+            box-shadow: 0 0 10px rgba(255,107,157,0.22);
+        }
+
+        .btn-lg-edit {
+            background: rgba(245,158,11,0.15);
+            border-color: rgba(245,158,11,0.45);
+            color: #f59e0b;
+        }
+        .btn-lg-edit:hover {
+            background: rgba(245,158,11,0.28);
+            box-shadow: 0 0 10px rgba(245,158,11,0.20);
+        }
+
+        .btn-lg-delete {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.15);
+            color: var(--clr-text-3, #6b6b8a);
+        }
+        .btn-lg-delete:hover {
+            background: rgba(255,80,80,0.15);
+            border-color: rgba(255,80,80,0.45);
+            color: #ff5050;
+        }
+
+        /* ── Pending Queue Cards ─────────────────────────────── */
+        .pending-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--sp-4);
+            padding: var(--sp-4) var(--sp-5);
+            background: rgba(255,165,0,0.05);
+            border: 1px solid rgba(255,165,0,0.22);
+            border-left: 3px solid var(--clr-pending);
+            border-radius: var(--radius-lg);
+            transition: background var(--t-fast), border-color var(--t-fast);
+            flex-wrap: wrap;
+        }
+        .pending-card:hover {
+            background: rgba(255,165,0,0.10);
+            border-color: rgba(255,165,0,0.45);
+        }
+
+        .pending-card-info { flex: 1; min-width: 0; }
+
+        .pending-card-donor {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-2);
+            margin-bottom: var(--sp-1);
+            flex-wrap: wrap;
+        }
+        .pending-card-donor-name {
+            font-weight: 700;
+            font-size: var(--fs-sm);
+            color: var(--clr-text);
+        }
+
+        .pending-card-detail {
+            font-size: var(--fs-sm);
+            color: var(--clr-text-2);
+            margin-bottom: 3px;
+        }
+
+        .pending-card-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-3);
+            flex-wrap: wrap;
+        }
+        .pending-card-meta-date {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+        }
+        .pending-card-meta-id {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .pending-card-actions {
+            display: flex;
+            gap: var(--sp-2);
+            flex-shrink: 0;
+        }
+
+        .btn-action-approve {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 18px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid rgba(0,212,100,0.50);
+            background: rgba(0,212,100,0.12);
+            color: #00d464;
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--t-fast);
+        }
+        .btn-action-approve:hover {
+            background: rgba(0,212,100,0.25);
+            border-color: #00d464;
+            box-shadow: 0 0 14px rgba(0,212,100,0.28);
+        }
+
+        .btn-action-reject {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 18px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid rgba(255,107,157,0.50);
+            background: rgba(255,107,157,0.12);
+            color: #ff6b9d;
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--t-fast);
+        }
+        .btn-action-reject:hover {
+            background: rgba(255,107,157,0.25);
+            border-color: #ff6b9d;
+            box-shadow: 0 0 14px rgba(255,107,157,0.28);
+        }
+
+        /* ── All-caught-up zero state ── */
+        .caught-up-box {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-4);
+            padding: var(--sp-5) var(--sp-6);
+            background: rgba(0,212,100,0.06);
+            border: 1px solid rgba(0,212,100,0.22);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--sp-6);
+        }
+        .caught-up-icon  { font-size: 2rem; flex-shrink: 0; }
+        .caught-up-title { font-weight: 700; color: var(--clr-approve); margin-bottom: 2px; }
+        .caught-up-text  { font-size: var(--fs-sm); color: var(--clr-text-2); line-height: 1.6; }
+    </style>
+</head>
+
+<body class="page-wrapper" x-data
+      x-init="
+        /* Auto-refresh every 10 seconds */
+        setInterval(function () {
+          $store.adminDashboard.loadAll();
+          lastRefresh = new Date().toLocaleTimeString();
+        }, 10000);
+      ">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <!-- ── Header ── -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="admin-gateway-portal.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+
+                <div class="admin-header-badge">🛡️ ADMINISTRATOR</div>
+
+                <nav class="header-nav">
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false"></button>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+                            <a href="database.html" class="dropdown-item">🗄️ Database View</a>
+                            <a href="donations-table.html" class="dropdown-item">📋 Master Table</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" id="logoutBtn">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Main ── -->
+    <main style="flex:1; padding-bottom:6rem;">
+        <div class="container">
+
+            <!-- Hero -->
+            <div class="page-hero fade-in-up">
+                <h1 class="page-hero-title">🛡️ Admin <span class="text-gradient">Control Hub</span></h1>
+                <p class="page-hero-sub">
+                    Real-time feed of all submissions. Approve or reject donations,
+                    edit records, and track the total approved inventory.
+                </p>
+            </div>
+
+            <!-- ── Stats bar ── -->
+            <div class="admin-stats fade-in-up">
+                <div class="admin-stat stat-total">
+                    <div class="admin-stat-value" x-text="$store.adminDashboard.totalCount">0</div>
+                    <div class="admin-stat-label">Total Records</div>
+                </div>
+                <div class="admin-stat stat-pending">
+                    <div class="admin-stat-value" x-text="$store.adminDashboard.pendingCount">0</div>
+                    <div class="admin-stat-label">Pending</div>
+                </div>
+                <div class="admin-stat stat-approved">
+                    <div class="admin-stat-value" x-text="$store.adminDashboard.approvedCount">0</div>
+                    <div class="admin-stat-label">Approved</div>
+                </div>
+                <div class="admin-stat stat-rejected">
+                    <div class="admin-stat-value" x-text="$store.adminDashboard.rejectedCount">0</div>
+                    <div class="admin-stat-label">Rejected</div>
+                </div>
+            </div>
+
+            <!-- ── Pending Queue banner ── -->
+            <div class="pending-queue-banner fade-in-up"
+                 x-show="$store.adminDashboard.pendingCount > 0">
+                <div class="pq-info">
+                    <span class="pending-dot-live"></span>
+                    <span class="pq-count" x-text="$store.adminDashboard.pendingCount"></span>
+                    <div>
+                        <div class="pq-label" style="font-weight:700; color:var(--clr-pending);">
+                            Donations awaiting your decision
+                        </div>
+                        <div class="pq-label" style="font-size:var(--fs-xs);">
+                            New donations enter <strong>Pending</strong> by default — review each one below.
+                        </div>
+                    </div>
+                </div>
+                <div class="refresh-info">
+                    Auto-refresh: every 10 s
+                </div>
+            </div>
+
+
+            <!-- ══════════════════════════════════════════════════════
+                 PENDING QUEUE — one card per donation awaiting review
+            ══════════════════════════════════════════════════════ -->
+
+            <!-- All-caught-up state: records exist but none are pending -->
+            <div class="caught-up-box fade-in-up"
+                 x-show="$store.adminDashboard.totalCount > 0 && $store.adminDashboard.pendingCount === 0"
+                 x-cloak>
+                <div class="caught-up-icon">✅</div>
+                <div class="caught-up-text">
+                    <div class="caught-up-title">All caught up!</div>
+                    Every submission has been reviewed — no pending donations remain.
+                </div>
+            </div>
+
+            <!-- Pending cards list -->
+            <div class="fade-in-up"
+                 x-show="$store.adminDashboard.pendingCount > 0"
+                 x-cloak
+                 style="margin-bottom:var(--sp-6);">
+
+                <div style="display:flex; align-items:center; justify-content:space-between;
+                            margin-bottom:var(--sp-4);">
+                    <div style="font-size:var(--fs-sm); font-weight:700; color:var(--clr-pending);">
+                        ⏳ Donations awaiting your decision
+                    </div>
+                    <div style="font-size:var(--fs-xs); color:var(--clr-text-3);">
+                        <span x-text="$store.adminDashboard.pendingCount"></span>
+                        <span> pending</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:var(--sp-3);">
+                    <template
+                        x-for="r in $store.adminDashboard.records.filter(function(x){return x.approved===null;})"
+                        :key="r.id">
+
+                        <div class="pending-card">
+
+                            <!-- Left: donor + item info -->
+                            <div class="pending-card-info">
+                                <div class="pending-card-donor">
+                                    <span class="pending-card-donor-name"
+                                          x-text="$store.adminDashboard.userName(r.userId)">
+                                    </span>
+                                    <span class="type-badge" :class="r.type"
+                                          x-text="{food:'🌾 Food',apparel:'👕 Apparel',money:'💳 Money'}[r.type]||r.type">
+                                    </span>
+                                </div>
+                                <div class="pending-card-detail"
+                                     x-text="$store.adminDashboard.detailSummary(r)">
+                                </div>
+                                <div class="pending-card-meta">
+                                    <span class="pending-card-meta-date"
+                                          x-text="$store.adminDashboard.formatDate(r.createdAt)">
+                                    </span>
+                                    <span class="pending-card-meta-id"
+                                          :title="r.id"
+                                          x-text="r.id">
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Right: action buttons -->
+                            <div class="pending-card-actions">
+                                <button class="btn-action-approve"
+                                        @click="$store.adminDashboard.approve(r.id)">
+                                    ✓ Approve
+                                </button>
+                                <button class="btn-action-reject"
+                                        @click="$store.adminDashboard.reject(r.id)">
+                                    ✕ Reject
+                                </button>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ── Toolbar ── -->
+            <div class="admin-toolbar fade-in-up">
+
+                <select class="filter-select" id="agFilterType">
+                    <option value="all">All Types</option>
+                    <option value="food">🌾 Food</option>
+                    <option value="apparel">👕 Apparel</option>
+                    <option value="money">💳 Money</option>
+                </select>
+
+                <select class="filter-select" id="agFilterStatus">
+                    <option value="all">All Statuses</option>
+                    <option value="pending">⏳ Pending</option>
+                    <option value="approved">✓ Approved</option>
+                    <option value="rejected">✕ Rejected</option>
+                </select>
+
+                <input type="search" class="search-input" id="agSearch"
+                       placeholder="Search ID, user, or type…" />
+
+                <button class="btn btn-ghost btn-sm" id="agRefresh">
+                    🔄 Refresh
+                </button>
+
+                <span class="row-count" id="agRowCount"></span>
+
+            </div>
+
+            <!-- ── Management Table (AG Grid) ── -->
+            <div id="adminGrid"
+                 class="ag-theme-alpine ag-theme-dms fade-in-up"
+                 style="width:100%; border-radius:var(--radius-lg); border:1px solid var(--clr-border); overflow:hidden;">
+            </div>
+
+
+            <!-- ════════════════════════════════════════════════════
+                 INVENTORY OVERVIEW — Approved donations only
+            ════════════════════════════════════════════════════ -->
+            <div class="inventory-section fade-in-up">
+
+                <div class="inventory-title">
+                    ✅ Approved Inventory Overview
+                    <span style="font-size:var(--fs-xs); font-weight:400; color:var(--clr-text-3); margin-left:var(--sp-3);">
+                        Only <strong style="color:var(--clr-approve);">approved</strong> records contribute to these totals.
+                    </span>
+                </div>
+
+                <!-- Zero-state -->
+                <div class="inv-empty"
+                     x-show="$store.adminDashboard.inventory.total === 0">
+                    No approved donations yet. Approve records above to see inventory here.
+                </div>
+
+                <!-- Food + Money summary cards -->
+                <div class="inventory-grid"
+                     x-show="$store.adminDashboard.inventory.total > 0">
+
+                    <div class="inv-card">
+                        <div class="inv-card-icon">🍚</div>
+                        <div class="inv-card-value"
+                             x-text="$store.adminDashboard.inventory.rice_kg + ' kg'">
+                        </div>
+                        <div class="inv-card-label">Rice (total)</div>
+                    </div>
+
+                    <div class="inv-card">
+                        <div class="inv-card-icon">🥦</div>
+                        <div class="inv-card-value"
+                             x-text="$store.adminDashboard.inventory.veg_kg + ' kg'">
+                        </div>
+                        <div class="inv-card-label">Vegetables (total)</div>
+                    </div>
+
+                    <div class="inv-card">
+                        <div class="inv-card-icon">💳</div>
+                        <div class="inv-card-value"
+                             x-text="$store.adminDashboard.inventory.money_count">
+                        </div>
+                        <div class="inv-card-label">Transactions</div>
+                    </div>
+
+                    <div class="inv-card" x-show="Object.keys($store.adminDashboard.inventory.clothes).length > 0">
+                        <div class="inv-card-icon">👕</div>
+                        <div class="inv-card-value"
+                             x-text="Object.values($store.adminDashboard.inventory.clothes).reduce(function(a,b){return a+b;},0)">
+                        </div>
+                        <div class="inv-card-label">Clothing donations</div>
+                    </div>
+
+                </div>
+
+                <!-- Clothes by age group breakdown -->
+                <div x-show="Object.keys($store.adminDashboard.inventory.clothes).length > 0"
+                     x-cloak
+                     style="margin-top:var(--sp-6);">
+                    <div style="font-size:var(--fs-xs); font-weight:700; color:var(--clr-text-3);
+                                text-transform:uppercase; letter-spacing:0.07em; margin-bottom:var(--sp-3);">
+                        Clothes by Age Group
+                    </div>
+                    <div class="inv-clothes-grid">
+                        <template x-for="age in $store.adminDashboard.VALID_AGES" :key="age">
+                            <div class="inv-clothes-card"
+                                 x-show="$store.adminDashboard.inventory.clothes[age]">
+                                <div class="inv-clothes-count"
+                                     x-text="$store.adminDashboard.inventory.clothes[age] || 0">
+                                </div>
+                                <div class="inv-clothes-label"
+                                     x-text="$store.adminDashboard.AGE_LABEL_MAP[age] || age">
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         MODAL 1 — Reject Reason
+    ══════════════════════════════════════════════════════════ -->
+    <div class="modal-overlay"
+         x-show="$store.adminDashboard.rejectModalOpen"
+         x-cloak
+         @click.self="$store.adminDashboard.cancelReject()">
+
+        <div class="modal-card" @click.stop>
+
+            <div class="modal-title" style="color:var(--clr-reject);">
+                ✕ Reject Donation
+            </div>
+
+            <p style="font-size:var(--fs-sm); color:var(--clr-text-2); margin-bottom:var(--sp-5); line-height:1.65;">
+                You must provide a reason. This will be stored on the record and
+                sent as a notification to the donor.
+            </p>
+
+            <label class="modal-field-label">Reason for Rejection <span style="color:var(--clr-reject);">*</span></label>
+            <textarea class="modal-textarea"
+                      placeholder="e.g. Food items appear expired, Incorrect QR code, Duplicate submission…"
+                      x-model="$store.adminDashboard.rejectReason"
+                      @keydown.escape="$store.adminDashboard.cancelReject()">
+            </textarea>
+
+            <div class="modal-error"
+                 x-show="$store.adminDashboard.rejectError"
+                 x-text="$store.adminDashboard.rejectError">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-modal-cancel"
+                        @click="$store.adminDashboard.cancelReject()">
+                    Cancel
+                </button>
+                <button class="btn-modal-save save-reject"
+                        @click="$store.adminDashboard.confirmReject()">
+                    ✕ Confirm Rejection
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         MODAL 2 — Edit Record
+    ══════════════════════════════════════════════════════════ -->
+    <div class="modal-overlay"
+         x-show="$store.adminDashboard.editOpen"
+         x-cloak
+         @click.self="$store.adminDashboard.cancelEdit()">
+
+        <div class="modal-card" @click.stop>
+
+            <div class="modal-title" style="color:var(--clr-admin);">
+                ✏️ Edit Record
+                <span style="font-size:var(--fs-xs); font-weight:400; color:var(--clr-text-3); margin-left:var(--sp-2);"
+                      x-text="$store.adminDashboard.editRecord ? $store.adminDashboard.editRecord.id : ''">
+                </span>
+            </div>
+
+            <div style="margin-bottom:var(--sp-5);" x-show="$store.adminDashboard.editRecord">
+                <span class="type-badge"
+                      :class="$store.adminDashboard.editRecord && $store.adminDashboard.editRecord.type"
+                      x-text="$store.adminDashboard.editRecord ?
+                               { food:'🌾 Food', apparel:'👕 Apparel', money:'💳 Money' }[$store.adminDashboard.editRecord.type]
+                               : ''">
+                </span>
+            </div>
+
+            <div class="modal-error"
+                 x-show="$store.adminDashboard.editError"
+                 x-text="$store.adminDashboard.editError">
+            </div>
+
+            <!-- Food fields -->
+            <div x-show="$store.adminDashboard.editRecord && $store.adminDashboard.editRecord.type === 'food'">
+                <label class="modal-field-label">🍚 Rice (kg)</label>
+                <input type="number" class="modal-input" min="0"
+                       x-model="$store.adminDashboard.editData.rice_qty"
+                       placeholder="Quantity in kg"
+                       style="border-color:rgba(245,158,11,0.35);" />
+
+                <label class="modal-field-label">🥦 Vegetables (kg)</label>
+                <input type="number" class="modal-input" min="0"
+                       x-model="$store.adminDashboard.editData.veg_qty"
+                       placeholder="Quantity in kg"
+                       style="border-color:rgba(245,158,11,0.35);" />
+            </div>
+
+            <!-- Apparel fields -->
+            <div x-show="$store.adminDashboard.editRecord && $store.adminDashboard.editRecord.type === 'apparel'">
+                <label class="modal-field-label">👕 Age Group</label>
+                <select class="modal-select" x-model.number="$store.adminDashboard.editData.target_age"
+                        style="border-color:rgba(245,158,11,0.35);">
+                    <option value="">Select age group…</option>
+                    <template x-for="age in $store.adminDashboard.VALID_AGES" :key="age">
+                        <option :value="age"
+                                x-text="age + ' — ' + ($store.adminDashboard.AGE_LABELS[age] || '')">
+                        </option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Money fields -->
+            <div x-show="$store.adminDashboard.editRecord && $store.adminDashboard.editRecord.type === 'money'">
+                <label class="modal-field-label">💳 Transaction ID</label>
+                <input type="text" class="modal-input"
+                       x-model="$store.adminDashboard.editData.transaction_id"
+                       placeholder="TXN-..."
+                       style="border-color:rgba(245,158,11,0.35);" />
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-modal-cancel" @click="$store.adminDashboard.cancelEdit()">
+                    Cancel
+                </button>
+                <button class="btn-modal-save save-edit"
+                        :disabled="$store.adminDashboard.editLoading"
+                        @click="$store.adminDashboard.saveEdit()">
+                    <span x-text="$store.adminDashboard.editLoading ? 'Saving…' : '💾 Save Changes'"></span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/service.js"></script>
+    <script src="js/alpine-store.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.1/dist/ag-grid-community.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+    <script>
+        /* ── Admin route guard — runs before Alpine boots ── */
+        window._dmsSession = requireAdmin();
+        if (!window._dmsSession) throw new Error('Admin access required');
+        renderHeaderProfile(window._dmsSession);
+
+        /* ── AG Grid initialization — runs after Alpine finishes booting ── */
+        document.addEventListener('alpine:initialized', function () {
+            var store = Alpine.store('adminDashboard');
+
+            /* ── Toolbar state ── */
+            var agFilterType   = 'all';
+            var agFilterStatus = 'all';
+
+            /* ── Bridge: AG Grid cell buttons → Alpine store actions ── */
+            window._doApprove = function (id) { store.approve(id); };
+            window._doReject  = function (id) { store.reject(id);  };
+            window._doEdit    = function (id) {
+                var rec = store.records.find(function (r) { return r.id === id; });
+                if (rec) store.startEdit(rec);
+            };
+            window._doDelete  = function (id) { store.deleteRec(id); };
+
+            /* ── Column definitions ── */
+            var columnDefs = [
+                {
+                    headerName: 'Donation ID',
+                    field: 'id',
+                    width: 148,
+                    sortable: true,
+                    resizable: true,
+                    cellRenderer: function (params) {
+                        return '<span title="' + params.value +
+                            '" style="font-family:\'Courier New\',monospace;font-size:11px;' +
+                            'color:var(--clr-text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">' +
+                            params.value + '</span>';
+                    }
+                },
+                {
+                    headerName: 'Donor',
+                    field: 'userId',
+                    minWidth: 160,
+                    flex: 1,
+                    sortable: true,
+                    resizable: true,
+                    cellRenderer: function (params) {
+                        var n = store.userName(params.value);
+                        var e = store.userEmail(params.value);
+                        return '<div>' +
+                            '<div style="font-weight:600;font-size:13px;margin-bottom:1px;">' + n + '</div>' +
+                            '<div style="font-size:11px;color:var(--clr-text-3);font-family:\'Courier New\',monospace;">' + e + '</div>' +
+                            '</div>';
+                    }
+                },
+                {
+                    headerName: 'Type',
+                    field: 'type',
+                    width: 132,
+                    sortable: true,
+                    resizable: true,
+                    cellRenderer: function (params) {
+                        var labels = { food: '🌾 Food', apparel: '👕 Apparel', money: '💳 Money' };
+                        return '<span class="type-badge ' + params.value + '">' +
+                            (labels[params.value] || params.value) + '</span>';
+                    }
+                },
+                {
+                    headerName: 'Status / Reason',
+                    field: 'approved',
+                    minWidth: 190,
+                    resizable: true,
+                    sortable: true,
+                    cellRenderer: function (params) {
+                        var r   = params.data;
+                        var cls = store.approvalClass(r.approved);
+                        var lbl = store.approvalLabel(r.approved);
+                        var ts  = r.approved === true  ? store.formatDate(r.approvedAt)  :
+                                  r.approved === false ? store.formatDate(r.rejectedAt) : '';
+                        var tsHtml = ts
+                            ? '<div style="font-size:10px;color:var(--clr-text-3);margin-top:3px;">' + ts + '</div>'
+                            : '';
+                        var rr = (r.approved === false && r.rejectionReason)
+                            ? '<div class="rejection-reason" style="margin-top:4px;max-width:178px;">Reason: ' +
+                              r.rejectionReason + '</div>'
+                            : '';
+                        return '<div><span class="approval-badge ' + cls + '">' +
+                            '<span class="approval-dot"></span>' +
+                            '<span>' + lbl + '</span></span>' +
+                            tsHtml + rr + '</div>';
+                    }
+                },
+                {
+                    headerName: 'Item Details',
+                    minWidth: 180,
+                    flex: 1,
+                    sortable: false,
+                    resizable: true,
+                    /* valueGetter feeds quickFilter text search */
+                    valueGetter: function (params) {
+                        return store.detailSummary(params.data);
+                    },
+                    cellRenderer: function (params) {
+                        var r = params.data;
+                        if (r.type === 'food') {
+                            return '<div style="font-size:12px;line-height:1.5;">' +
+                                '<span>🍚 <strong>' + (r.rice_qty != null ? r.rice_qty : 0) + '</strong> kg Rice</span>' +
+                                '<span style="color:var(--clr-text-3);margin:0 6px;">·</span>' +
+                                '<span>🥦 <strong>' + (r.veg_qty  != null ? r.veg_qty  : 0) + '</strong> kg Veg</span>' +
+                                '</div>';
+                        }
+                        if (r.type === 'apparel') {
+                            var lbl = store.AGE_LABEL_MAP[r.target_age] || '';
+                            return '<div style="font-size:12px;line-height:1.5;">' +
+                                '👕 Age <strong>' + (r.target_age != null ? r.target_age : '—') + '</strong>' +
+                                (lbl ? '<span style="color:var(--clr-text-3);margin-left:5px;">— ' + lbl + '</span>' : '') +
+                                '</div>';
+                        }
+                        if (r.type === 'money') {
+                            return '<div style="font-size:12px;line-height:1.5;font-family:\'Courier New\',monospace;">' +
+                                '💳 ' + (r.transaction_id || '—') +
+                                '</div>';
+                        }
+                        return '<span style="color:var(--clr-text-3);">—</span>';
+                    }
+                },
+                {
+                    headerName: 'Created',
+                    field: 'createdAt',
+                    width: 152,
+                    sortable: true,
+                    resizable: true,
+                    cellRenderer: function (params) {
+                        return '<span style="font-size:11px;color:var(--clr-text-2);white-space:nowrap;">' +
+                            store.formatDate(params.value) + '</span>';
+                    }
+                },
+                {
+                    headerName: 'Actions',
+                    minWidth: 288,
+                    sortable: false,
+                    resizable: false,
+                    filter: false,
+                    cellRenderer: function (params) {
+                        var r  = params.data;
+                        /* Escape ID for use in onclick strings */
+                        var id = r.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                        var da = r.approved === true  ? 'disabled' : '';
+                        var dr = r.approved === false ? 'disabled' : '';
+                        return '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">' +
+                            '<button class="btn-lg-action btn-lg-approve" ' + da +
+                                ' onclick="window._doApprove(\'' + id + '\')">✓ Approve</button>' +
+                            '<button class="btn-lg-action btn-lg-reject" ' + dr +
+                                ' onclick="window._doReject(\'' + id + '\')">✕ Reject</button>' +
+                            '<button class="btn-lg-action btn-lg-edit"' +
+                                ' onclick="window._doEdit(\'' + id + '\')">✏️ Edit</button>' +
+                            '<button class="btn-lg-action btn-lg-delete"' +
+                                ' onclick="window._doDelete(\'' + id + '\')">🗑 Del</button>' +
+                            '</div>';
+                    }
+                }
+            ];
+
+            /* ── Grid options ── */
+            var gridOptions = {
+                columnDefs:     columnDefs,
+                rowData:        store.records,
+                rowHeight:      58,
+                headerHeight:   44,
+                domLayout:      'autoHeight',
+                pagination:     true,
+                paginationPageSize: 25,
+                paginationPageSizeSelector: [10, 25, 50, 100],
+                animateRows:    true,
+                suppressCellFocus: true,
+                defaultColDef: {
+                    sortable:  true,
+                    resizable: true,
+                    filter:    false
+                },
+                rowClassRules: {
+                    'row-pending':  function (p) { return p.data.approved === null;  },
+                    'row-approved': function (p) { return p.data.approved === true;  },
+                    'row-rejected': function (p) { return p.data.approved === false; }
+                },
+                isExternalFilterPresent: function () {
+                    return agFilterType !== 'all' || agFilterStatus !== 'all';
+                },
+                doesExternalFilterPass: function (node) {
+                    var r = node.data;
+                    if (agFilterType !== 'all' && r.type !== agFilterType) return false;
+                    if (agFilterStatus === 'pending'  && r.approved !== null)  return false;
+                    if (agFilterStatus === 'approved' && r.approved !== true)  return false;
+                    if (agFilterStatus === 'rejected' && r.approved !== false) return false;
+                    return true;
+                },
+                onModelUpdated: function (params) {
+                    var count = params.api.getDisplayedRowCount();
+                    var el = document.getElementById('agRowCount');
+                    if (el) el.textContent = count + ' record' + (count !== 1 ? 's' : '');
+                }
+            };
+
+            /* ── Create grid ── */
+            var gridDiv = document.getElementById('adminGrid');
+            window._agGridApi = agGrid.createGrid(gridDiv, gridOptions);
+
+            /* ── Toolbar wiring ── */
+            var typeSelect   = document.getElementById('agFilterType');
+            var statusSelect = document.getElementById('agFilterStatus');
+            var searchInput  = document.getElementById('agSearch');
+            var refreshBtn   = document.getElementById('agRefresh');
+
+            if (typeSelect) {
+                typeSelect.addEventListener('change', function () {
+                    agFilterType = this.value;
+                    window._agGridApi.onFilterChanged();
+                });
+            }
+            if (statusSelect) {
+                statusSelect.addEventListener('change', function () {
+                    agFilterStatus = this.value;
+                    window._agGridApi.onFilterChanged();
+                });
+            }
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    window._agGridApi.setGridOption('quickFilterText', this.value);
+                });
+            }
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function () {
+                    store.loadAll();
+                });
+            }
+
+            /* ── Patch store.loadAll() to also push fresh data to AG Grid ──
+               Called by the auto-refresh setInterval on the body x-init and
+               by the Refresh button above.  */
+            var _origLoadAll = store.loadAll.bind(store);
+            store.loadAll = function () {
+                _origLoadAll();
+                if (window._agGridApi) {
+                    window._agGridApi.setGridOption('rowData', store.records);
+                }
+            };
+
+            /* ── Initial row count render ── */
+            var initCount = store.records.length;
+            var rowCountEl = document.getElementById('agRowCount');
+            if (rowCountEl) {
+                rowCountEl.textContent = initCount + ' record' + (initCount !== 1 ? 's' : '');
+            }
+        });
+    </script>
+</body>
+
+</html>

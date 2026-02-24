@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Donation — DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        /* x-cloak hides elements until Alpine boots (prevents FOUC) */
+        [x-cloak] { display: none !important; }
+
+        .module-card { max-width: 560px; margin: 0 auto; }
+
+        /* ── Scanner container ── */
+        #scannerContainer {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 400px;
+            margin: 0 auto;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #cameraVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #scanCanvas { display: none; }
+
+        /* Laser sweep animation */
+        .scan-overlay { position: absolute; inset: 0; pointer-events: none; }
+
+        .scan-corner {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-color: var(--clr-accent-2);
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .scan-corner.tl { top:16px; left:16px; border-top-width:3px; border-left-width:3px; border-radius:4px 0 0 0; }
+        .scan-corner.tr { top:16px; right:16px; border-top-width:3px; border-right-width:3px; border-radius:0 4px 0 0; }
+        .scan-corner.bl { bottom:16px; left:16px; border-bottom-width:3px; border-left-width:3px; border-radius:0 0 0 4px; }
+        .scan-corner.br { bottom:16px; right:16px; border-bottom-width:3px; border-right-width:3px; border-radius:0 0 4px 0; }
+
+        .scan-laser {
+            position: absolute;
+            left: 16px;
+            right: 16px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--clr-accent-2), transparent);
+            animation: laserSweep 2s ease-in-out infinite;
+            box-shadow: 0 0 8px var(--clr-accent-2);
+        }
+
+        @keyframes laserSweep {
+            0%   { top: 16px; }
+            50%  { top: calc(100% - 18px); }
+            100% { top: 16px; }
+        }
+
+        /* ── QR result card ── */
+        .qr-result-card {
+            border-radius: var(--radius-lg);
+            border: 1.5px solid rgba(0,212,170,0.35);
+            background: rgba(0,212,170,0.08);
+            padding: var(--sp-5) var(--sp-6);
+        }
+
+        .qr-result-label {
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            color: var(--clr-accent-2);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--sp-2);
+        }
+
+        .qr-result-payload {
+            font-family: 'Courier New', monospace;
+            font-size: var(--fs-sm);
+            color: var(--clr-text);
+            word-break: break-all;
+            line-height: 1.7;
+            background: rgba(0,0,0,0.25);
+            padding: var(--sp-3);
+            border-radius: var(--radius-sm);
+        }
+
+        .txn-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            background: rgba(108,99,255,0.15);
+            color: var(--clr-primary-l);
+            border-radius: var(--radius-full);
+            padding: var(--sp-1) var(--sp-4);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-top: var(--sp-3);
+        }
+
+        /* ── Record list ── */
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--sp-3) var(--sp-4);
+            border-radius: var(--radius-md);
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            font-size: var(--fs-sm);
+            gap: var(--sp-4);
+        }
+
+        .record-item + .record-item { margin-top: var(--sp-2); }
+
+        .rec-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+            background: rgba(108,99,255,0.15);
+            color: var(--clr-primary-l);
+            border-radius: var(--radius-full);
+            padding: 2px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<!--
+  x-data on <body> activates Alpine for all $store references.
+  x-init registers camera cleanup on page-leave events.
+-->
+<body class="page-wrapper" x-data
+      x-init="
+        window.addEventListener('pagehide',    () => $store.moneyForm.stopScanner());
+        window.addEventListener('beforeunload', () => $store.moneyForm.stopScanner());
+      ">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="dashboard.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+                <nav class="header-nav">
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false"></button>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+                            <a href="dashboard.html" class="dropdown-item">🏠 Dashboard</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" id="logoutBtn">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main style="flex:1; padding-bottom:4rem;">
+        <div class="container">
+
+            <!-- Hero -->
+            <div class="page-hero fade-in-up">
+                <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+                <h1 class="page-hero-title">💳 Financial <span class="text-gradient">Donation</span></h1>
+                <p class="page-hero-sub">Scan a payment QR code to record your financial contribution.</p>
+            </div>
+
+            <div class="glass-card module-card fade-in-up" style="padding:2rem;">
+
+                <!-- ══════════════════════════════════════════════ -->
+                <!-- STATE: idle — always visible on first paint    -->
+                <!-- ══════════════════════════════════════════════ -->
+                <div x-show="$store.moneyForm.state === 'idle'">
+                    <div style="text-align:center; padding:var(--sp-6) 0;">
+                        <div style="font-size:4rem; margin-bottom:var(--sp-4);">📷</div>
+                        <h2 style="font-size:1.25rem; font-weight:700; margin-bottom:var(--sp-3);">QR Payment Scanner</h2>
+                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); margin-bottom:var(--sp-6); max-width:360px; margin-left:auto; margin-right:auto;">
+                            Point your camera at a payment QR code. The scanner will automatically detect and decode it.
+                        </p>
+
+                        <!-- Camera error alert -->
+                        <p x-show="$store.moneyForm.cameraError"
+                           x-cloak
+                           style="color:var(--clr-danger); font-size:var(--fs-sm); text-align:center; padding:var(--sp-3); margin-bottom:var(--sp-4);">
+                            ⚠️ Camera access denied or not available. Please allow camera permissions and try again.
+                        </p>
+
+                        <button
+                            class="btn btn-primary"
+                            style="min-width:200px;"
+                            @click="$store.moneyForm.startScanner()"
+                            :disabled="$store.moneyForm.isLoading"
+                        >
+                            <div class="btn-spinner" x-show="$store.moneyForm.isLoading"></div>
+                            <span class="btn-label"
+                                  x-text="$store.moneyForm.isLoading ? 'Starting…' : '📷 Open Camera'">
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════ -->
+                <!-- STATE: scanning                               -->
+                <!-- ══════════════════════════════════════════════ -->
+                <div x-show="$store.moneyForm.state === 'scanning'" x-cloak>
+                    <h2 style="font-size:1.125rem; font-weight:700; margin-bottom:var(--sp-4); text-align:center;">
+                        <span style="background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                            Scanning…
+                        </span>
+                    </h2>
+
+                    <div id="scannerContainer">
+                        <video id="cameraVideo" autoplay muted playsinline></video>
+                        <canvas id="scanCanvas"></canvas>
+                        <div class="scan-overlay">
+                            <div class="scan-corner tl"></div>
+                            <div class="scan-corner tr"></div>
+                            <div class="scan-corner bl"></div>
+                            <div class="scan-corner br"></div>
+                            <div class="scan-laser"></div>
+                        </div>
+                    </div>
+
+                    <p style="text-align:center; color:var(--clr-text-3); font-size:var(--fs-sm); margin-top:var(--sp-4);">
+                        Hold the QR code steady inside the viewfinder
+                    </p>
+
+                    <div style="text-align:center; margin-top:var(--sp-5);">
+                        <button class="btn btn-ghost btn-sm"
+                                @click="$store.moneyForm.stopScanner(); $store.moneyForm.state = 'idle'">
+                            ✕ Cancel Scan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════ -->
+                <!-- STATE: detected                               -->
+                <!-- ══════════════════════════════════════════════ -->
+                <div x-show="$store.moneyForm.state === 'detected'" x-cloak>
+                    <div style="text-align:center; margin-bottom:var(--sp-5);">
+                        <div style="font-size:2.5rem; margin-bottom:var(--sp-3);">✅</div>
+                        <h2 style="font-size:1.25rem; font-weight:700; color:var(--clr-success);">QR Code Detected!</h2>
+                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); margin-top:var(--sp-2);">
+                            Review the payment string below, then confirm to complete the transaction.
+                        </p>
+                    </div>
+
+                    <div class="qr-result-card" style="margin-bottom:var(--sp-5);">
+                        <div class="qr-result-label">Payment String</div>
+                        <!-- x-text bound directly to store qrPayload -->
+                        <div class="qr-result-payload" x-text="$store.moneyForm.qrPayload"></div>
+                        <div class="txn-badge" x-text="$store.moneyForm.txnRef"></div>
+                    </div>
+
+                    <div style="display:flex; gap:var(--sp-3);">
+                        <button class="btn btn-ghost" style="flex:1;"
+                                @click="$store.moneyForm.retryScanner()">
+                            🔄 Re-scan
+                        </button>
+                        <button class="btn btn-primary" style="flex:2;"
+                                @click="$store.moneyForm.confirmTransaction()"
+                                :disabled="$store.moneyForm.isLoading">
+                            <div class="btn-spinner" x-show="$store.moneyForm.isLoading"></div>
+                            <span class="btn-label"
+                                  x-text="$store.moneyForm.isLoading ? 'Verifying…' : '✓ Complete Transaction'">
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════════ -->
+                <!-- STATE: confirmed                              -->
+                <!-- ══════════════════════════════════════════════ -->
+                <div x-show="$store.moneyForm.state === 'confirmed'" x-cloak>
+                    <div style="text-align:center; padding:var(--sp-6) 0;">
+                        <div style="font-size:4rem; margin-bottom:var(--sp-4);">🎉</div>
+                        <h2 style="font-size:1.375rem; font-weight:800; margin-bottom:var(--sp-3);" class="text-gradient">
+                            Transaction Recorded!
+                        </h2>
+                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); max-width:360px; margin:0 auto var(--sp-6);">
+                            Your financial donation has been logged and verified. Thank you for your generosity!
+                        </p>
+                        <div style="display:flex; gap:var(--sp-3); justify-content:center; flex-wrap:wrap;">
+                            <button class="btn btn-primary btn-sm"
+                                    @click="$store.moneyForm.resetToIdle()">
+                                📷 Scan Another
+                            </button>
+                            <a href="dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Recent Records -->
+            <div class="module-card fade-in-up"
+                 x-show="$store.moneyForm.records.length > 0"
+                 x-cloak
+                 style="margin-top:var(--sp-8);">
+                <h3 style="font-size:1rem; font-weight:700; margin-bottom:var(--sp-4); color:var(--clr-text-2);">
+                    Recent Financial Donations
+                </h3>
+                <template x-for="r in $store.moneyForm.records" :key="r.id">
+                    <div class="record-item">
+                        <div style="min-width:0; flex:1;">
+                            <div style="font-weight:600; margin-bottom:2px;">Financial Donation</div>
+                            <div style="font-size:var(--fs-xs); color:var(--clr-text-3);"
+                                 x-text="$store.moneyForm.formatDate(r.createdAt)"></div>
+                            <div style="font-size:var(--fs-xs); color:var(--clr-text-3); margin-top:2px; font-family:monospace; word-break:break-all;"
+                                 x-text="r.qr_payload.length > 36 ? r.qr_payload.slice(0,36) + '…' : r.qr_payload">
+                            </div>
+                        </div>
+                        <span class="rec-chip" style="flex-shrink:0;"
+                              x-text="'💳 ' + r.transaction_id">
+                        </span>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- jsQR must load before alpine-store.js since the store calls it -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/service.js"></script>
+    <script src="js/alpine-store.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+    <!-- Thin auth block: runs synchronously, before Alpine boots -->
+    <script>
+        window._dmsSession = requireAuth();
+        if (!window._dmsSession) throw new Error('Unauthenticated');
+        renderHeaderProfile(window._dmsSession);
+
+        /* Global success listener: redirects to Confirmation View */
+        window.addEventListener('donationSuccess', function (e) {
+            redirectTo('confirmation.html?rid=' + e.detail.id, 250);
+        });
+    </script>
+</body>
+
+</html>

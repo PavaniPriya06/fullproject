@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — DonateHub</title>
+    <meta name="description"
+        content="Your DonateHub command centre — donate, explore campaigns, and discover organisations." />
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        /* ── Notification badge ── */
+        .notif-badge {
+            position: absolute;
+            top: 4px; right: 4px;
+            min-width: 16px; height: 16px;
+            background: var(--clr-accent);
+            border-radius: 50%;
+            border: 2px solid var(--clr-bg, #0d0d1a);
+            font-size: 9px;
+            font-weight: 800;
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+            padding: 0 3px;
+            pointer-events: none;
+        }
+
+        /* ── Notification dropdown panel ── */
+        .notif-dropdown {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 320px;
+            max-height: 420px;
+            overflow-y: auto;
+            background: var(--clr-surface, #1a1a2e);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            z-index: 200;
+            display: none;
+        }
+        .notif-dropdown.open {
+            display: block;
+            animation: notifFadeIn 0.18s ease both;
+        }
+        @keyframes notifFadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .notif-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--sp-4) var(--sp-5);
+            border-bottom: 1px solid var(--clr-border);
+            font-size: var(--fs-sm);
+            font-weight: 700;
+        }
+
+        .notif-empty {
+            text-align: center;
+            padding: 2.5rem var(--sp-5);
+            color: var(--clr-text-3);
+            font-size: var(--fs-sm);
+            line-height: 1.7;
+        }
+
+        .notif-item {
+            padding: var(--sp-4) var(--sp-5);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background var(--t-fast);
+        }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item:hover { background: rgba(255,255,255,0.04); }
+        .notif-item.unread { background: rgba(108,99,255,0.06); }
+
+        .notif-item-top {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--sp-2);
+            margin-bottom: 3px;
+        }
+
+        .notif-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+        .notif-dot.approved { background: #00d464; }
+        .notif-dot.rejected { background: #ff6b9d; }
+
+        .notif-msg {
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .notif-reason-pill {
+            font-size: var(--fs-xs);
+            color: #ff6b9d;
+            background: rgba(255,107,157,0.10);
+            border: 1px solid rgba(255,107,157,0.25);
+            border-radius: var(--radius-sm);
+            padding: 2px var(--sp-2);
+            display: inline-block;
+            margin-top: var(--sp-1);
+            word-break: break-word;
+        }
+
+        .notif-time {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body class="page-wrapper">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="dashboard.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+
+                <nav class="header-nav">
+                    <!-- Notification bell -->
+                    <div style="position:relative;">
+                        <button class="btn btn-ghost btn-icon" id="notifBtn" title="Notifications"
+                                aria-haspopup="true" aria-expanded="false"
+                                style="position:relative;">
+                            🔔
+                            <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+                        </button>
+                        <div class="notif-dropdown" id="notifDropdown" role="menu">
+                            <div class="notif-panel-header">
+                                <span>🔔 Notifications</span>
+                                <span id="notifUnreadLabel" style="font-size:var(--fs-xs); color:var(--clr-text-3); font-weight:400;"></span>
+                            </div>
+                            <div id="notifList"></div>
+                        </div>
+                    </div>
+
+                    <!-- Profile button -->
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false" aria-haspopup="true">
+                            <!-- Populated by auth.js renderHeaderProfile() -->
+                        </button>
+
+                        <!-- Profile Dropdown -->
+                        <div class="profile-dropdown" id="profileDropdown" role="menu">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+
+                            <a href="donate.html" class="dropdown-item" role="menuitem">
+                                <span>💝</span> Make a Donation
+                            </a>
+                            <a href="campaigns.html" class="dropdown-item" role="menuitem">
+                                <span>📣</span> Campaigns
+                            </a>
+                            <a href="organizations.html" class="dropdown-item" role="menuitem">
+                                <span>🏛️</span> Organizations
+                            </a>
+
+                            <div class="dropdown-divider"></div>
+
+                            <div class="dropdown-item" role="menuitem" style="cursor:default; opacity:0.6;">
+                                <span>📊</span>
+                                <span id="ddTotalDonated">$0 donated total</span>
+                            </div>
+
+                            <div class="dropdown-divider"></div>
+
+                            <button class="dropdown-item danger" id="logoutBtn" role="menuitem">
+                                <span>🚪</span> Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Main ───────────────────────────────────────────── -->
+    <main class="dashboard-main">
+        <div class="container">
+
+            <!-- Greeting -->
+            <div class="dashboard-greeting fade-in-up">
+                <p class="greeting-label" id="greetingLabel">Good day</p>
+                <h1 class="greeting-title">
+                    <span id="greetingText">Hello</span>,
+                    <span class="text-gradient" id="userName">Friend</span> 👋
+                </h1>
+                <p class="greeting-sub">
+                    Ready to make a difference today? Choose how you'd like to give.
+                </p>
+            </div>
+
+            <!-- Quick Stats Bar -->
+            <div class="stats-bar fade-in-up fade-in-up-2" id="statsBar">
+                <div class="stat-box">
+                    <div class="stat-box-label">Your Donations</div>
+                    <div class="stat-box-value" id="statMyDonations">$0</div>
+                    <div class="stat-box-change change-up">↑ All time</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-label">Lives Impacted</div>
+                    <div class="stat-box-value">12.4K</div>
+                    <div class="stat-box-change change-up">↑ Platform-wide</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-label">Active Campaigns</div>
+                    <div class="stat-box-value">348</div>
+                    <div class="stat-box-change change-up">↑ 24 new this week</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-box-label">Organizations</div>
+                    <div class="stat-box-value">120+</div>
+                    <div class="stat-box-change change-up">↑ Verified NGOs</div>
+                </div>
+            </div>
+
+            <!-- ── Three Service Path Cards ───────────────────── -->
+            <section class="category-section fade-in-up fade-in-up-3">
+                <h2 class="section-title">How would you like to donate today?</h2>
+
+                <div class="category-grid">
+
+                    <!-- Path A: Food Inventory -->
+                    <a href="food-inventory.html" class="category-card" id="card-food" role="button">
+                        <div class="card-decoration">🌾</div>
+                        <div class="card-content">
+                            <div class="card-icon-wrap">🌾</div>
+                            <h3 class="card-title">Food Inventory</h3>
+                            <p class="card-desc">
+                                Log food items for the donation drive. Enter quantities
+                                of rice and vegetables to track your contribution.
+                            </p>
+                            <div class="card-stats">
+                                <div class="card-stat">
+                                    <span class="stat-value text-gradient">🍚</span>
+                                    <span class="stat-label">Rice (kg)</span>
+                                </div>
+                                <div class="card-stat">
+                                    <span class="stat-value text-gradient">🥦</span>
+                                    <span class="stat-label">Vegetables (kg)</span>
+                                </div>
+                            </div>
+                            <div class="card-arrow">
+                                Log Food <span>→</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Path B: Apparel -->
+                    <a href="apparel.html" class="category-card" id="card-apparel" role="button">
+                        <div class="card-decoration">👕</div>
+                        <div class="card-content">
+                            <div class="card-icon-wrap">👕</div>
+                            <h3 class="card-title">Apparel (Clothes)</h3>
+                            <p class="card-desc">
+                                Donate clothing items. Select the target age group from
+                                the provided categories so items reach the right recipients.
+                            </p>
+                            <div class="card-stats">
+                                <div class="card-stat">
+                                    <span class="stat-value" style="color:var(--clr-accent-2);">5</span>
+                                    <span class="stat-label">Age groups</span>
+                                </div>
+                                <div class="card-stat">
+                                    <span class="stat-value" style="color:var(--clr-accent-2);">10–45</span>
+                                    <span class="stat-label">Age range</span>
+                                </div>
+                            </div>
+                            <div class="card-arrow">
+                                Donate Clothes <span>→</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Path C: Financial / Money -->
+                    <a href="money.html" class="category-card" id="card-money" role="button">
+                        <div class="card-decoration">💳</div>
+                        <div class="card-content">
+                            <div class="card-icon-wrap">💳</div>
+                            <h3 class="card-title">Financial Donation</h3>
+                            <p class="card-desc">
+                                Scan a payment QR code using your device camera to record
+                                a financial transaction instantly and securely.
+                            </p>
+                            <div class="card-stats">
+                                <div class="card-stat">
+                                    <span class="stat-value" style="color:var(--clr-accent);">📷</span>
+                                    <span class="stat-label">QR Scanner</span>
+                                </div>
+                                <div class="card-stat">
+                                    <span class="stat-value" style="color:var(--clr-accent);">✓</span>
+                                    <span class="stat-label">Instant verify</span>
+                                </div>
+                            </div>
+                            <div class="card-arrow">
+                                Scan & Pay <span>→</span>
+                            </div>
+                        </div>
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- Recent Activity (placeholder) -->
+            <section class="fade-in-up fade-in-up-4" id="recentSection" style="display:none;">
+                <h2 class="section-title" style="margin-bottom:var(--sp-5);">Recent Activity</h2>
+                <div id="recentList" style="display:flex; flex-direction:column; gap:var(--sp-3);"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script src="js/service.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // ── Auth Guard ──────────────────────────────────────
+        const session = requireAuth();
+        if (!session) throw new Error('Unauthenticated');
+
+        // ── Greeting ────────────────────────────────────────
+        qs('#greetingLabel').textContent = getGreeting();
+        qs('#greetingText').textContent = getGreeting();
+        qs('#userName').textContent = session.fullName.split(' ')[0];
+
+        // ── Stat: user's total donated ───────────────────
+        qs('#statMyDonations').textContent = formatCurrency(session.totalDonated || 0);
+        qs('#ddTotalDonated').textContent = formatCurrency(session.totalDonated || 0) + ' donated total';
+
+        // ── Profile Dropdown ───────────────────────────────
+        renderHeaderProfile(session);
+
+        // ── Notification bell ─────────────────────────────
+        (function () {
+            var notifBtn      = qs('#notifBtn');
+            var notifDropdown = qs('#notifDropdown');
+            var notifBadge    = qs('#notifBadge');
+            var notifList     = qs('#notifList');
+            var unreadLabel   = qs('#notifUnreadLabel');
+
+            function renderNotifications() {
+                var notifs = DonationService.getNotificationsForUser(session.userId);
+                var unread = notifs.filter(function (n) { return !n.read; }).length;
+
+                /* Update badge */
+                if (unread > 0) {
+                    notifBadge.textContent    = unread > 9 ? '9+' : String(unread);
+                    notifBadge.style.display  = 'flex';
+                    unreadLabel.textContent   = unread + ' unread';
+                } else {
+                    notifBadge.style.display = 'none';
+                    unreadLabel.textContent  = notifs.length ? 'All read' : '';
+                }
+
+                /* Render list */
+                if (notifs.length === 0) {
+                    notifList.innerHTML =
+                        '<div class="notif-empty">📭 No notifications yet.<br>' +
+                        'You\'ll be notified when your donation is reviewed.</div>';
+                    return;
+                }
+
+                notifList.innerHTML = notifs.map(function (n) {
+                    var reasonHtml = (n.type === 'rejected' && n.reason)
+                        ? '<div class="notif-reason-pill">Reason: ' + n.reason + '</div>'
+                        : '';
+                    var timeStr = new Date(n.createdAt).toLocaleString();
+                    return '<div class="notif-item' + (n.read ? '' : ' unread') + '">' +
+                        '<div class="notif-item-top">' +
+                            '<span class="notif-dot ' + n.type + '"></span>' +
+                            '<span class="notif-msg">' + n.message + '</span>' +
+                        '</div>' +
+                        reasonHtml +
+                        '<div class="notif-time">' + timeStr + '</div>' +
+                    '</div>';
+                }).join('');
+            }
+
+            /* Initial render on page load */
+            renderNotifications();
+
+            /* Toggle panel */
+            notifBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var isOpen = notifDropdown.classList.toggle('open');
+                notifBtn.setAttribute('aria-expanded', String(isOpen));
+                if (isOpen) {
+                    /* Mark all read and re-render so badge clears */
+                    DonationService.markAllNotificationsRead(session.userId);
+                    renderNotifications();
+                }
+            });
+
+            /* Close on outside click */
+            document.addEventListener('click', function () {
+                notifDropdown.classList.remove('open');
+                notifBtn.setAttribute('aria-expanded', 'false');
+            });
+            notifDropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+        })();
+
+        // ── Keyboard nav for cards ─────────────────────────
+        qsa('.category-card').forEach(card => {
+            card.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    card.click();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

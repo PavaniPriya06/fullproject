@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Organizations — DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="page-wrapper">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="dashboard.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+                <nav class="header-nav">
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false"></button>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+                            <a href="dashboard.html" class="dropdown-item">🏠 Dashboard</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" id="logoutBtn">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main style="flex:1; padding-bottom: 4rem;">
+        <div class="container">
+            <!-- Hero -->
+            <div class="page-hero fade-in-up">
+                <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+                <h1 class="page-hero-title">🏛️ Verified <span class="text-gradient">Organizations</span></h1>
+                <p class="page-hero-sub">Discover transparent, impactful NGOs you can trust with your generosity.</p>
+            </div>
+
+            <!-- Search + Filter -->
+            <div class="fade-in-up fade-in-up-2">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="orgSearch" placeholder="Search organizations…" oninput="filterOrgs()" />
+                </div>
+                <div class="filter-pills" id="orgFilters">
+                    <button class="pill active" onclick="setOrgFilter(this,'All')">All</button>
+                    <button class="pill" onclick="setOrgFilter(this,'Education')">🎓 Education</button>
+                    <button class="pill" onclick="setOrgFilter(this,'Healthcare')">🏥 Healthcare</button>
+                    <button class="pill" onclick="setOrgFilter(this,'Environment')">🌿 Environment</button>
+                    <button class="pill" onclick="setOrgFilter(this,'Hunger')">🍽️ Hunger</button>
+                </div>
+            </div>
+
+            <!-- Orgs Grid -->
+            <div class="org-grid fade-in-up fade-in-up-3" id="orgGrid"></div>
+        </div>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const session = requireAuth();
+        if (!session) throw new Error('Unauthenticated');
+        renderHeaderProfile(session);
+
+        const ORGS = [
+            { id: 1, name: 'BrightFuture Trust', logo: '🎓', cat: 'Education', desc: 'Empowering underprivileged children with quality education, scholarships and vocational training.', beneficiaries: '45K+', funded: '$3.2M', rating: '4.9', verified: true },
+            { id: 2, name: 'HealTheWorld NGO', logo: '🏥', cat: 'Healthcare', desc: 'Delivering affordable healthcare through mobile clinics, free surgeries and rural health camps.', beneficiaries: '120K+', funded: '$8.1M', rating: '4.8', verified: true },
+            { id: 3, name: 'Green Earth Alliance', logo: '🌿', cat: 'Environment', desc: 'Fighting climate change through reforestation, clean energy projects and community eco-programs.', beneficiaries: '200K+', funded: '$5.6M', rating: '4.7', verified: true },
+            { id: 4, name: 'Feed The Nation', logo: '🍽️', cat: 'Hunger', desc: 'Ending hunger by running community kitchens, food banks and nutrition programs for families.', beneficiaries: '90K+', funded: '$2.4M', rating: '4.9', verified: true },
+            { id: 5, name: 'Scholar Seeds', logo: '📖', cat: 'Education', desc: 'Providing digital literacy and STEM education to children in remote and underserved communities.', beneficiaries: '22K+', funded: '$1.1M', rating: '4.6', verified: true },
+            { id: 6, name: 'Pure Water Project', logo: '💧', cat: 'Healthcare', desc: 'Building wells, purification systems and educating communities on water hygiene and sanitation.', beneficiaries: '55K+', funded: '$4.3M', rating: '4.8', verified: true },
+            { id: 7, name: 'EcoWarriors Foundation', logo: '☀️', cat: 'Environment', desc: 'Deploying solar, wind, and biogas energy to remote villages and educating on sustainable living.', beneficiaries: '18K+', funded: '$900K', rating: '4.7', verified: true },
+            { id: 8, name: 'NourishKids Trust', logo: '🥗', cat: 'Hunger', desc: 'Providing daily nutritious meals to schoolchildren, improving attendance and academic outcomes.', beneficiaries: '35K+', funded: '$1.8M', rating: '4.9', verified: true },
+        ];
+
+        let activeOrgFilter = 'All';
+
+        function setOrgFilter(btn, cat) {
+            qsa('#orgFilters .pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            activeOrgFilter = cat;
+            filterOrgs();
+        }
+
+        function filterOrgs() {
+            const q = qs('#orgSearch').value.toLowerCase();
+            const filtered = ORGS.filter(o => {
+                const matchCat = activeOrgFilter === 'All' || o.cat === activeOrgFilter;
+                const matchQ = o.name.toLowerCase().includes(q) || o.desc.toLowerCase().includes(q);
+                return matchCat && matchQ;
+            });
+            renderOrgs(filtered);
+        }
+
+        function renderOrgs(list) {
+            const grid = qs('#orgGrid');
+            if (!list.length) {
+                grid.innerHTML = `<p style="color:var(--clr-text-3);grid-column:1/-1;text-align:center;padding:3rem;">No organizations found.</p>`;
+                return;
+            }
+            grid.innerHTML = list.map(o => `
+        <div class="org-card">
+          <div class="org-header">
+            <div class="org-logo">${o.logo}</div>
+            <div class="org-info">
+              <div class="org-name">${o.name}</div>
+              ${o.verified ? '<div class="org-verified">✅ Verified NGO</div>' : ''}
+              <span style="font-size:.75rem; color:var(--clr-text-3);">${o.cat}</span>
+            </div>
+            <div style="font-size:.9rem; font-weight:700; color:var(--clr-warning); margin-left:auto;">⭐ ${o.rating}</div>
+          </div>
+          <p class="org-desc">${o.desc}</p>
+          <div class="org-stats">
+            <div class="org-stat">
+              <div class="org-stat-v">${o.beneficiaries}</div>
+              <div class="org-stat-l">Beneficiaries</div>
+            </div>
+            <div class="org-stat">
+              <div class="org-stat-v">${o.funded}</div>
+              <div class="org-stat-l">Total Funded</div>
+            </div>
+            <div class="org-stat">
+              <div class="org-stat-v">${o.rating}</div>
+              <div class="org-stat-l">Rating</div>
+            </div>
+          </div>
+          <div class="org-divider"></div>
+          <a href="donate.html" class="btn btn-primary" style="width:100%; justify-content:center;">
+            Donate to ${o.name.split(' ')[0]} 💝
+          </a>
+        </div>`).join('');
+        }
+
+        renderOrgs(ORGS);
+    </script>
+</body>
+
+</html>

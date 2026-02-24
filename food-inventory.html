@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Food Inventory — DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        [x-cloak] { display: none !important; }
+
+        .module-card {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .field-row {
+            display: flex;
+            flex-direction: column;
+            gap: var(--sp-2);
+            margin-bottom: var(--sp-6);
+        }
+
+        .field-row .form-label {
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            color: var(--clr-text-2);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .qty-wrap {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-3);
+        }
+
+        .qty-wrap .unit-badge {
+            font-size: var(--fs-sm);
+            color: var(--clr-text-3);
+            white-space: nowrap;
+        }
+
+        .record-list { margin-top: var(--sp-8); }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--sp-3) var(--sp-4);
+            border-radius: var(--radius-md);
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            font-size: var(--fs-sm);
+            gap: var(--sp-4);
+        }
+
+        .record-item + .record-item { margin-top: var(--sp-2); }
+
+        .record-item .rec-meta {
+            color: var(--clr-text-3);
+            font-size: var(--fs-xs);
+        }
+
+        .record-item .rec-values {
+            display: flex;
+            gap: var(--sp-4);
+        }
+
+        .rec-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+            background: rgba(108,99,255,0.15);
+            color: var(--clr-primary-l);
+            border-radius: var(--radius-full);
+            padding: 2px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<!-- x-data on <body> activates Alpine for all $store references on this page -->
+<body class="page-wrapper" x-data>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="dashboard.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+                <nav class="header-nav">
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false"></button>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+                            <a href="dashboard.html" class="dropdown-item">🏠 Dashboard</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" id="logoutBtn">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main style="flex:1; padding-bottom:4rem;">
+        <div class="container">
+
+            <!-- Hero -->
+            <div class="page-hero fade-in-up">
+                <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+                <h1 class="page-hero-title">🌾 Food <span class="text-gradient">Inventory</span></h1>
+                <p class="page-hero-sub">Log quantities of food items being donated to the drive.</p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="glass-card module-card fade-in-up" style="padding:2rem;">
+                <h2 style="font-size:1.125rem; font-weight:700; margin-bottom:1.75rem;">
+                    <span style="background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                        Enter Quantities
+                    </span>
+                </h2>
+
+                <!-- Rice -->
+                <div class="field-row">
+                    <label class="form-label" for="riceQty">🍚 Rice — Quantity</label>
+                    <div class="qty-wrap">
+                        <input
+                            id="riceQty"
+                            type="number"
+                            class="form-input"
+                            placeholder="0"
+                            min="0"
+                            step="1"
+                            style="max-width:200px;"
+                            x-model="$store.foodForm.rice"
+                            :class="{ 'form-input--error': $store.foodForm.riceError }"
+                        />
+                        <span class="unit-badge">kg</span>
+                    </div>
+                    <span class="form-error"
+                          x-show="$store.foodForm.riceError"
+                          x-text="$store.foodForm.riceError"
+                          x-cloak>
+                    </span>
+                </div>
+
+                <!-- Vegetables -->
+                <div class="field-row">
+                    <label class="form-label" for="vegQty">🥦 Vegetables — Quantity</label>
+                    <div class="qty-wrap">
+                        <input
+                            id="vegQty"
+                            type="number"
+                            class="form-input"
+                            placeholder="0"
+                            min="0"
+                            step="1"
+                            style="max-width:200px;"
+                            x-model="$store.foodForm.vegetables"
+                            :class="{ 'form-input--error': $store.foodForm.vegError }"
+                        />
+                        <span class="unit-badge">kg</span>
+                    </div>
+                    <span class="form-error"
+                          x-show="$store.foodForm.vegError"
+                          x-text="$store.foodForm.vegError"
+                          x-cloak>
+                    </span>
+                </div>
+
+                <button
+                    class="btn btn-primary"
+                    style="width:100%;"
+                    @click="$store.foodForm.submit()"
+                    :disabled="$store.foodForm.isLoading"
+                >
+                    <div class="btn-spinner" x-show="$store.foodForm.isLoading"></div>
+                    <span class="btn-label"
+                          x-text="$store.foodForm.isLoading ? 'Saving…' : 'Log Donation 🌾'">
+                    </span>
+                </button>
+            </div>
+
+            <!-- Recent Records — shown only when records exist -->
+            <div class="module-card record-list fade-in-up"
+                 x-show="$store.foodForm.records.length > 0"
+                 x-cloak>
+                <h3 style="font-size:1rem; font-weight:700; margin-bottom:var(--sp-4); color:var(--clr-text-2);">
+                    Recent Food Donations
+                </h3>
+                <template x-for="r in $store.foodForm.records" :key="r.id">
+                    <div class="record-item">
+                        <div>
+                            <div style="font-weight:600; margin-bottom:2px;">Food Donation</div>
+                            <div class="rec-meta"
+                                 x-text="$store.foodForm.formatDate(r.createdAt)"></div>
+                        </div>
+                        <div class="rec-values">
+                            <span class="rec-chip">🍚 <span x-text="r.rice_qty"></span> kg Rice</span>
+                            <span class="rec-chip">🥦 <span x-text="r.veg_qty"></span> kg Veg</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/service.js"></script>
+    <script src="js/alpine-store.js"></script>  <!-- must be before Alpine CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+    <!-- Thin auth block: runs synchronously, before Alpine boots -->
+    <script>
+        window._dmsSession = requireAuth();
+        if (!window._dmsSession) throw new Error('Unauthenticated');
+        renderHeaderProfile(window._dmsSession);
+
+        /* Global success listener: redirects to Confirmation View */
+        window.addEventListener('donationSuccess', function (e) {
+            redirectTo('confirmation.html?rid=' + e.detail.id, 250);
+        });
+    </script>
+</body>
+
+</html>

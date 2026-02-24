@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login — DonateHub</title>
+    <meta name="description" content="Sign in to DonateHub and start making a difference today." />
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        /* ── Portal tab switcher ── */
+        .portal-tabs {
+            display: flex;
+            border-radius: var(--radius-full);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--clr-border);
+            padding: 4px;
+            margin-bottom: var(--sp-7);
+            gap: 4px;
+        }
+
+        .portal-tab {
+            flex: 1;
+            border: none;
+            border-radius: var(--radius-full);
+            padding: var(--sp-2) var(--sp-3);
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--t-fast);
+            background: transparent;
+            color: var(--clr-text-3);
+        }
+
+        .portal-tab.active {
+            background: var(--clr-primary);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(108,99,255,0.40);
+        }
+
+        .portal-tab.admin-tab.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            box-shadow: 0 2px 10px rgba(245,158,11,0.40);
+            color: #fff;
+        }
+
+        /* ── Admin section visual ── */
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            background: rgba(245,158,11,0.12);
+            border: 1px solid rgba(245,158,11,0.35);
+            border-radius: var(--radius-full);
+            padding: var(--sp-1) var(--sp-4);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            color: #f59e0b;
+            letter-spacing: 0.06em;
+            margin-bottom: var(--sp-5);
+        }
+
+        .admin-hint {
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: var(--radius-md);
+            padding: var(--sp-3) var(--sp-4);
+            margin-bottom: var(--sp-5);
+            font-size: var(--fs-xs);
+            color: var(--clr-text-2);
+            line-height: 1.7;
+        }
+
+        .admin-hint code {
+            font-family: 'Courier New', monospace;
+            background: rgba(245,158,11,0.15);
+            padding: 1px 6px;
+            border-radius: 4px;
+            color: #f59e0b;
+            font-size: var(--fs-xs);
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(245,158,11,0.30);
+        }
+        .btn-admin:hover {
+            box-shadow: 0 6px 20px rgba(245,158,11,0.45);
+            transform: translateY(-1px);
+        }
+
+        /* ── Panel visibility ── */
+        .portal-panel { display: none; }
+        .portal-panel.active { display: block; }
+    </style>
+</head>
+
+<body>
+    <!-- Background Orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="center-layout">
+        <div class="glass-card auth-card fade-in-up">
+
+            <!-- Brand -->
+            <div class="brand">
+                <div class="brand-icon">💝</div>
+                <span class="brand-name text-gradient">DonateHub</span>
+            </div>
+
+            <!-- Portal tab switcher -->
+            <div class="portal-tabs" role="tablist" aria-label="Login portal">
+                <button class="portal-tab active" id="tabDonor" role="tab"
+                        aria-selected="true" aria-controls="panelDonor"
+                        onclick="switchPortal('donor')">
+                    💝 Donor Login
+                </button>
+                <button class="portal-tab admin-tab" id="tabAdmin" role="tab"
+                        aria-selected="false" aria-controls="panelAdmin"
+                        onclick="switchPortal('admin')">
+                    🛡️ Admin Portal
+                </button>
+            </div>
+
+            <!-- ════ PANEL: Donor ════ -->
+            <div class="portal-panel active" id="panelDonor" role="tabpanel" aria-labelledby="tabDonor">
+
+                <h1 class="auth-title" style="margin-top:0;">Welcome back</h1>
+                <p class="auth-subtitle">Sign in to continue your mission of giving</p>
+
+                <form id="loginForm" novalidate>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <div class="form-input-wrapper input-icon-left">
+                            <input id="email" type="email" class="form-input" placeholder="you@example.com"
+                                autocomplete="email" required />
+                            <span class="form-input-icon">📧</span>
+                        </div>
+                        <span class="form-error" id="emailError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <div class="form-input-wrapper input-icon-left" style="position:relative;">
+                            <input id="password" type="password" class="form-input" placeholder="Enter your password"
+                                autocomplete="current-password" style="padding-right: 3rem;" required />
+                            <span class="form-input-icon">🔒</span>
+                            <span class="toggle-password" id="togglePwd" title="Show/hide password">👁️</span>
+                        </div>
+                        <span class="form-error" id="passwordError"></span>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+                        <label class="form-check" for="remember">
+                            <input type="checkbox" id="remember" />
+                            <span class="check-box"></span>
+                            <span class="check-label">Remember me</span>
+                        </label>
+                        <a href="#" class="auth-link" style="font-size:0.8rem;">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" id="loginBtn" class="btn btn-primary">
+                        <div class="btn-spinner"></div>
+                        <span class="btn-label">Sign In</span>
+                    </button>
+
+                </form>
+
+                <div class="divider">or</div>
+                <div class="auth-link-row">
+                    Don't have an account?
+                    <a href="register.html" class="auth-link">Create one free</a>
+                </div>
+
+            </div>
+
+            <!-- ════ PANEL: Admin ════ -->
+            <div class="portal-panel" id="panelAdmin" role="tabpanel" aria-labelledby="tabAdmin">
+
+                <div style="text-align:center; margin-bottom:var(--sp-5);">
+                    <div class="admin-badge">🛡️ Administrator Access</div>
+                    <h1 class="auth-title" style="margin-top:0;">Admin Portal</h1>
+                    <p class="auth-subtitle">Restricted. Authorised personnel only.</p>
+                </div>
+
+                <div class="admin-hint">
+                    Default credentials — <code>admin@donatehub.com</code> / <code>Admin@123</code>
+                </div>
+
+                <form id="adminLoginForm" novalidate>
+
+                    <div class="form-group">
+                        <label class="form-label" for="adminEmail">Admin Email</label>
+                        <div class="form-input-wrapper input-icon-left">
+                            <input id="adminEmail" type="email" class="form-input"
+                                placeholder="admin@donatehub.com"
+                                autocomplete="email" required />
+                            <span class="form-input-icon">📧</span>
+                        </div>
+                        <span class="form-error" id="adminEmailError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="adminPassword">Password</label>
+                        <div class="form-input-wrapper input-icon-left" style="position:relative;">
+                            <input id="adminPassword" type="password" class="form-input"
+                                placeholder="Enter admin password"
+                                autocomplete="current-password" style="padding-right:3rem;" required />
+                            <span class="form-input-icon">🔑</span>
+                            <span class="toggle-password" id="toggleAdminPwd" title="Show/hide password">👁️</span>
+                        </div>
+                        <span class="form-error" id="adminPasswordError"></span>
+                    </div>
+
+                    <button type="submit" id="adminLoginBtn" class="btn btn-admin"
+                            style="width:100%; margin-top:var(--sp-2);">
+                        <div class="btn-spinner"></div>
+                        <span class="btn-label">🛡️ Enter Admin Dashboard</span>
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        /* Redirect if already authenticated */
+        redirectIfAuth();
+
+        /* ── Portal switcher ── */
+        function switchPortal(portal) {
+            const isDonor = portal === 'donor';
+            qs('#tabDonor').classList.toggle('active',   isDonor);
+            qs('#tabAdmin').classList.toggle('active',  !isDonor);
+            qs('#panelDonor').classList.toggle('active',  isDonor);
+            qs('#panelAdmin').classList.toggle('active', !isDonor);
+            qs('#tabDonor').setAttribute('aria-selected',  isDonor);
+            qs('#tabAdmin').setAttribute('aria-selected', !isDonor);
+        }
+
+        /* ── Donor password toggle ── */
+        const passwordIn = qs('#password');
+        qs('#togglePwd').addEventListener('click', function () {
+            const isText = passwordIn.type === 'text';
+            passwordIn.type = isText ? 'password' : 'text';
+            qs('#togglePwd').textContent = isText ? '👁️' : '🙈';
+        });
+
+        /* ── Admin password toggle ── */
+        const adminPasswordIn = qs('#adminPassword');
+        qs('#toggleAdminPwd').addEventListener('click', function () {
+            const isText = adminPasswordIn.type === 'text';
+            adminPasswordIn.type = isText ? 'password' : 'text';
+            qs('#toggleAdminPwd').textContent = isText ? '👁️' : '🙈';
+        });
+
+        /* ── Donor Login ── */
+        const emailIn   = qs('#email');
+        const loginBtn  = qs('#loginBtn');
+        const loginForm = qs('#loginForm');
+
+        emailIn.addEventListener('input',     function () { clearFieldError(emailIn); });
+        passwordIn.addEventListener('input',  function () { clearFieldError(passwordIn); });
+
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            let valid = true;
+            const email = emailIn.value.trim();
+            const pwd   = passwordIn.value;
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showFieldError(emailIn, 'Please enter a valid email address.');
+                valid = false;
+            }
+            if (!pwd) {
+                showFieldError(passwordIn, 'Password is required.');
+                valid = false;
+            }
+            if (!valid) return;
+
+            setLoading(loginBtn, true);
+            await new Promise(function (r) { setTimeout(r, 600); });
+
+            const result = loginUser(email, pwd);
+            if (result.success) {
+                if (result.user.role === 'admin') {
+                    /* Admin tried the donor portal — send them to admin.html */
+                    showToast('Welcome back, Administrator! Redirecting…', 'success');
+                    redirectTo('admin.html', 800);
+                } else {
+                    showToast('Welcome back, ' + result.user.fullName.split(' ')[0] + '! 🎉', 'success');
+                    redirectTo('dashboard.html', 800);
+                }
+            } else {
+                setLoading(loginBtn, false);
+                showToast(result.message, 'error');
+                if (result.message.includes('email')) showFieldError(emailIn, result.message);
+                else showFieldError(passwordIn, result.message);
+            }
+        });
+
+        /* ── Admin Login ── */
+        const adminEmailIn   = qs('#adminEmail');
+        const adminLoginBtn  = qs('#adminLoginBtn');
+        const adminLoginForm = qs('#adminLoginForm');
+
+        adminEmailIn.addEventListener('input',    function () { clearFieldError(adminEmailIn); });
+        adminPasswordIn.addEventListener('input', function () { clearFieldError(adminPasswordIn); });
+
+        adminLoginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            let valid = true;
+            const email = adminEmailIn.value.trim();
+            const pwd   = adminPasswordIn.value;
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showFieldError(adminEmailIn, 'Please enter a valid email address.');
+                valid = false;
+            }
+            if (!pwd) {
+                showFieldError(adminPasswordIn, 'Password is required.');
+                valid = false;
+            }
+            if (!valid) return;
+
+            setLoading(adminLoginBtn, true);
+            await new Promise(function (r) { setTimeout(r, 600); });
+
+            const result = loginUser(email, pwd);
+            if (!result.success) {
+                setLoading(adminLoginBtn, false);
+                showToast(result.message, 'error');
+                if (result.message.includes('email')) showFieldError(adminEmailIn, result.message);
+                else showFieldError(adminPasswordIn, result.message);
+                return;
+            }
+
+            if (result.user.role !== 'admin') {
+                setLoading(adminLoginBtn, false);
+                showToast('Access denied. This portal is for administrators only.', 'error');
+                showFieldError(adminEmailIn, 'No admin account found with this email.');
+                return;
+            }
+
+            showToast('Access granted. Welcome, ' + result.user.fullName.split(' ')[0] + '!', 'success');
+            redirectTo('admin.html', 800);
+        });
+    </script>
+</body>
+
+</html>

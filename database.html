@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Database View — DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        [x-cloak] { display: none !important; }
+
+        /* ── Tab navigation ── */
+        .db-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--sp-2);
+            margin-bottom: var(--sp-6);
+        }
+
+        .db-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-2);
+            padding: var(--sp-2) var(--sp-5);
+            border-radius: var(--radius-full);
+            border: 1.5px solid var(--clr-border);
+            background: transparent;
+            color: var(--clr-text-3);
+            font-size: var(--fs-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--t-fast);
+        }
+
+        .db-tab:hover {
+            border-color: var(--clr-primary);
+            color: var(--clr-text);
+        }
+
+        .db-tab.active {
+            background: rgba(108,99,255,0.18);
+            border-color: var(--clr-primary);
+            color: var(--clr-primary-l);
+            box-shadow: 0 0 0 2px rgba(108,99,255,0.25);
+        }
+
+        .tab-badge {
+            background: rgba(255,255,255,0.10);
+            border-radius: var(--radius-full);
+            padding: 1px 7px;
+            font-size: var(--fs-xs);
+        }
+
+        /* ── Schema legend ── */
+        .schema-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+            gap: var(--sp-3);
+            margin-bottom: var(--sp-6);
+        }
+
+        .schema-cell {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius-md);
+            padding: var(--sp-4);
+        }
+
+        .schema-cell-name {
+            font-family: 'Courier New', monospace;
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            color: var(--clr-primary-l);
+            margin-bottom: var(--sp-1);
+        }
+
+        .schema-cell-type {
+            font-size: var(--fs-xs);
+            color: var(--clr-accent-2);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: var(--sp-1);
+        }
+
+        .schema-cell-desc {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            line-height: 1.5;
+        }
+
+        /* ── Table wrapper ── */
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--clr-border);
+            background: rgba(255,255,255,0.03);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--fs-sm);
+        }
+
+        thead th {
+            background: rgba(108,99,255,0.12);
+            color: var(--clr-text-2);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding: var(--sp-3) var(--sp-4);
+            text-align: left;
+            border-bottom: 1px solid var(--clr-border);
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background var(--t-fast);
+        }
+
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.04); }
+
+        tbody td {
+            padding: var(--sp-3) var(--sp-4);
+            vertical-align: middle;
+            color: var(--clr-text);
+        }
+
+        /* PK / FK / monospace cells */
+        .pk-cell, .fk-cell, .mono-cell {
+            font-family: 'Courier New', monospace;
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+            max-width: 170px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .fk-cell { color: var(--clr-accent-3, var(--clr-accent-2)); }
+
+        /* Type badge */
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+            border-radius: var(--radius-full);
+            padding: 3px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .type-badge.food    { background: rgba(108,99,255,0.18); color: var(--clr-primary-l); }
+        .type-badge.apparel { background: rgba(0,212,170,0.18);  color: var(--clr-accent-2);  }
+        .type-badge.money   { background: rgba(255,107,157,0.18); color: var(--clr-accent);    }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+            border-radius: var(--radius-full);
+            padding: 2px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+        }
+
+        .status-badge.pending   { background: rgba(255,165,0,0.18); color: #ffa500; }
+        .status-badge.completed { background: rgba(0,212,100,0.18); color: #00d464; }
+
+        /* Age chip */
+        .age-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+            background: rgba(0,212,170,0.15);
+            color: var(--clr-accent-2);
+            border-radius: var(--radius-full);
+            padding: 2px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 700;
+        }
+
+        /* Qty chips */
+        .qty-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(108,99,255,0.13);
+            color: var(--clr-primary-l);
+            border-radius: var(--radius-full);
+            padding: 2px var(--sp-3);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+        }
+
+        /* User cell */
+        .user-name  { font-weight: 600; margin-bottom: 1px; font-size: var(--fs-sm); }
+        .user-email { font-size: var(--fs-xs); color: var(--clr-text-3); font-family: 'Courier New', monospace; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: var(--sp-12) var(--sp-4);
+        }
+
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: var(--sp-3); }
+        .empty-state p { color: var(--clr-text-3); font-size: var(--fs-sm); }
+
+        /* Table name label */
+        .table-label {
+            font-size: var(--fs-xs);
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            color: var(--clr-text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--sp-3);
+        }
+
+        /* Refresh btn area */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--sp-3);
+            margin-bottom: var(--sp-4);
+        }
+
+        .row-count {
+            font-size: var(--fs-xs);
+            color: var(--clr-text-3);
+        }
+    </style>
+</head>
+
+<body class="page-wrapper" x-data>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="dashboard.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+                <nav class="header-nav">
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false"></button>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+                            <a href="dashboard.html" class="dropdown-item">🏠 Dashboard</a>
+                            <a href="donations-table.html" class="dropdown-item">📋 Master Table</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" id="logoutBtn">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main style="flex:1; padding-bottom:4rem;">
+        <div class="container">
+
+            <!-- Hero -->
+            <div class="page-hero fade-in-up">
+                <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+                <h1 class="page-hero-title">🗄️ Database <span class="text-gradient">View</span></h1>
+                <p class="page-hero-sub">
+                    Inspect all four normalized tables — Master record log plus the three category sub-tables.
+                </p>
+            </div>
+
+            <!-- ── Tab navigation ── -->
+            <div class="db-tabs fade-in-up">
+
+                <button class="db-tab"
+                        :class="{ active: $store.databaseView.activeTab === 'master' }"
+                        @click="$store.databaseView.setTab('master')">
+                    📋 dms_donation_records
+                    <span class="tab-badge" x-text="$store.databaseView.masterCount"></span>
+                </button>
+
+                <button class="db-tab"
+                        :class="{ active: $store.databaseView.activeTab === 'food' }"
+                        @click="$store.databaseView.setTab('food')">
+                    🌾 dms_food_donations
+                    <span class="tab-badge" x-text="$store.databaseView.foodCount"></span>
+                </button>
+
+                <button class="db-tab"
+                        :class="{ active: $store.databaseView.activeTab === 'clothes' }"
+                        @click="$store.databaseView.setTab('clothes')">
+                    👕 dms_clothes_donations
+                    <span class="tab-badge" x-text="$store.databaseView.clothesCount"></span>
+                </button>
+
+                <button class="db-tab"
+                        :class="{ active: $store.databaseView.activeTab === 'money' }"
+                        @click="$store.databaseView.setTab('money')">
+                    💳 dms_money_donations
+                    <span class="tab-badge" x-text="$store.databaseView.moneyCount"></span>
+                </button>
+
+                <button class="db-tab" style="margin-left:auto;"
+                        @click="$store.databaseView._loadUsers(); $store.databaseView.loadAll();"
+                        title="Reload all tables">
+                    🔄 Refresh
+                </button>
+
+            </div>
+
+
+            <!-- ════════════════════════════════════════════════ -->
+            <!-- TAB: Master Table                               -->
+            <!-- ════════════════════════════════════════════════ -->
+            <div x-show="$store.databaseView.activeTab === 'master'">
+
+                <!-- Schema legend -->
+                <section class="fade-in-up" style="margin-bottom:var(--sp-6);">
+                    <div style="font-size:var(--fs-xs); font-weight:700; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:var(--sp-3);">
+                        Table Schema — dms_donation_records
+                    </div>
+                    <div class="schema-grid">
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">id</div>
+                            <div class="schema-cell-type">VARCHAR · Primary Key</div>
+                            <div class="schema-cell-desc">Auto-generated unique identifier prefixed with <code>dr_</code>.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">userId</div>
+                            <div class="schema-cell-type">VARCHAR · Foreign Key</div>
+                            <div class="schema-cell-desc">References dms_users. Resolved to name + email in display.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">type</div>
+                            <div class="schema-cell-type">ENUM('food','apparel','money')</div>
+                            <div class="schema-cell-desc">Donation pathway. Determines which sub-table holds details.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">createdAt</div>
+                            <div class="schema-cell-type">TIMESTAMP</div>
+                            <div class="schema-cell-desc">ISO 8601 date-time when the record was committed.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <span class="table-label">dms_donation_records</span>
+                    <span class="row-count"
+                          x-text="$store.databaseView.masterCount + ' row' + ($store.databaseView.masterCount !== 1 ? 's' : '')">
+                    </span>
+                </div>
+
+                <div class="table-wrap fade-in-up">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:170px;">id <span style="color:var(--clr-accent-2); font-weight:400;">(PK)</span></th>
+                                <th>userId <span style="color:var(--clr-accent-3, var(--clr-accent-2)); font-weight:400;">(FK)</span></th>
+                                <th>type <em style="color:var(--clr-text-3); font-style:normal; font-weight:400;">ENUM</em></th>
+                                <th>createdAt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <template x-for="r in $store.databaseView.masterRows" :key="r.id">
+                                <tr>
+                                    <td><span class="pk-cell" :title="r.id" x-text="r.id"></span></td>
+                                    <td>
+                                        <div class="user-name"
+                                             x-text="$store.databaseView.userName(r.userId)"></div>
+                                        <div class="user-email" x-text="r.userId"></div>
+                                    </td>
+                                    <td>
+                                        <span class="type-badge" :class="r.type"
+                                              x-text="$store.databaseView.typeLabel(r.type)"></span>
+                                    </td>
+                                    <td style="font-size:var(--fs-xs); color:var(--clr-text-2); white-space:nowrap;"
+                                        x-text="$store.databaseView.formatDate(r.createdAt)"></td>
+                                </tr>
+                            </template>
+
+                            <tr x-show="$store.databaseView.masterRows.length === 0">
+                                <td colspan="4">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">📭</div>
+                                        <p>No records yet. Complete a donation from any path to see it here.</p>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+
+            <!-- ════════════════════════════════════════════════ -->
+            <!-- TAB: Food_Donations                             -->
+            <!-- ════════════════════════════════════════════════ -->
+            <div x-show="$store.databaseView.activeTab === 'food'" x-cloak>
+
+                <!-- Schema legend -->
+                <section class="fade-in-up" style="margin-bottom:var(--sp-6);">
+                    <div style="font-size:var(--fs-xs); font-weight:700; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:var(--sp-3);">
+                        Table Schema — dms_food_donations
+                    </div>
+                    <div class="schema-grid">
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">id</div>
+                            <div class="schema-cell-type">VARCHAR · Primary Key</div>
+                            <div class="schema-cell-desc">Auto-generated identifier prefixed with <code>fd_</code>.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">donation_id</div>
+                            <div class="schema-cell-type">VARCHAR · Foreign Key</div>
+                            <div class="schema-cell-desc">References dms_donation_records.id (master PK).</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">rice_qty</div>
+                            <div class="schema-cell-type">INTEGER</div>
+                            <div class="schema-cell-desc">Quantity of rice donated in kilograms (≥ 0).</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">veg_qty</div>
+                            <div class="schema-cell-type">INTEGER</div>
+                            <div class="schema-cell-desc">Quantity of vegetables donated in kilograms (≥ 0).</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <span class="table-label">dms_food_donations</span>
+                    <span class="row-count"
+                          x-text="$store.databaseView.foodCount + ' row' + ($store.databaseView.foodCount !== 1 ? 's' : '')">
+                    </span>
+                </div>
+
+                <div class="table-wrap fade-in-up">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:150px;">id <span style="color:var(--clr-accent-2); font-weight:400;">(PK)</span></th>
+                                <th>donation_id <span style="color:var(--clr-accent-3, var(--clr-accent-2)); font-weight:400;">(FK)</span></th>
+                                <th>rice_qty</th>
+                                <th>veg_qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <template x-for="r in $store.databaseView.foodRows" :key="r.id">
+                                <tr>
+                                    <td><span class="pk-cell" :title="r.id" x-text="r.id"></span></td>
+                                    <td><span class="fk-cell" :title="r.donation_id" x-text="r.donation_id"></span></td>
+                                    <td>
+                                        <span class="qty-chip">🍚 <span x-text="r.rice_qty"></span> kg</span>
+                                    </td>
+                                    <td>
+                                        <span class="qty-chip">🥦 <span x-text="r.veg_qty"></span> kg</span>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr x-show="$store.databaseView.foodRows.length === 0">
+                                <td colspan="4">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">🌾</div>
+                                        <p>No food donations recorded yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+
+            <!-- ════════════════════════════════════════════════ -->
+            <!-- TAB: Clothes_Donations                          -->
+            <!-- ════════════════════════════════════════════════ -->
+            <div x-show="$store.databaseView.activeTab === 'clothes'" x-cloak>
+
+                <!-- Schema legend -->
+                <section class="fade-in-up" style="margin-bottom:var(--sp-6);">
+                    <div style="font-size:var(--fs-xs); font-weight:700; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:var(--sp-3);">
+                        Table Schema — dms_clothes_donations
+                    </div>
+                    <div class="schema-grid">
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">id</div>
+                            <div class="schema-cell-type">VARCHAR · Primary Key</div>
+                            <div class="schema-cell-desc">Auto-generated identifier prefixed with <code>cd_</code>.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">donation_id</div>
+                            <div class="schema-cell-type">VARCHAR · Foreign Key</div>
+                            <div class="schema-cell-desc">References dms_donation_records.id (master PK).</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">target_age</div>
+                            <div class="schema-cell-type">INTEGER · ENUM(10,19,20,30,45)</div>
+                            <div class="schema-cell-desc">Age group the clothing items are intended for.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <span class="table-label">dms_clothes_donations</span>
+                    <span class="row-count"
+                          x-text="$store.databaseView.clothesCount + ' row' + ($store.databaseView.clothesCount !== 1 ? 's' : '')">
+                    </span>
+                </div>
+
+                <div class="table-wrap fade-in-up">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:150px;">id <span style="color:var(--clr-accent-2); font-weight:400;">(PK)</span></th>
+                                <th>donation_id <span style="color:var(--clr-accent-3, var(--clr-accent-2)); font-weight:400;">(FK)</span></th>
+                                <th>target_age <em style="color:var(--clr-text-3); font-style:normal; font-weight:400;">ENUM</em></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <template x-for="r in $store.databaseView.clothesRows" :key="r.id">
+                                <tr>
+                                    <td><span class="pk-cell" :title="r.id" x-text="r.id"></span></td>
+                                    <td><span class="fk-cell" :title="r.donation_id" x-text="r.donation_id"></span></td>
+                                    <td>
+                                        <span class="age-chip">👕 <span x-text="r.target_age"></span></span>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr x-show="$store.databaseView.clothesRows.length === 0">
+                                <td colspan="3">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">👕</div>
+                                        <p>No clothing donations recorded yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+
+            <!-- ════════════════════════════════════════════════ -->
+            <!-- TAB: Money_Donations                            -->
+            <!-- ════════════════════════════════════════════════ -->
+            <div x-show="$store.databaseView.activeTab === 'money'" x-cloak>
+
+                <!-- Schema legend -->
+                <section class="fade-in-up" style="margin-bottom:var(--sp-6);">
+                    <div style="font-size:var(--fs-xs); font-weight:700; color:var(--clr-text-3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:var(--sp-3);">
+                        Table Schema — dms_money_donations
+                    </div>
+                    <div class="schema-grid">
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">id</div>
+                            <div class="schema-cell-type">VARCHAR · Primary Key</div>
+                            <div class="schema-cell-desc">Auto-generated identifier prefixed with <code>md_</code>.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">donation_id</div>
+                            <div class="schema-cell-type">VARCHAR · Foreign Key</div>
+                            <div class="schema-cell-desc">References dms_donation_records.id (master PK).</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">transaction_id</div>
+                            <div class="schema-cell-type">VARCHAR</div>
+                            <div class="schema-cell-desc">System-generated transaction reference in TXN-{timestamp} format.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">qr_payload</div>
+                            <div class="schema-cell-type">VARCHAR</div>
+                            <div class="schema-cell-desc">Raw string decoded from the payment QR code.</div>
+                        </div>
+                        <div class="schema-cell">
+                            <div class="schema-cell-name">status</div>
+                            <div class="schema-cell-type">BOOLEAN</div>
+                            <div class="schema-cell-desc"><strong>false</strong> = pending (QR captured). <strong>true</strong> = completion reached (confirmed by user).</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <span class="table-label">dms_money_donations</span>
+                    <span class="row-count"
+                          x-text="$store.databaseView.moneyCount + ' row' + ($store.databaseView.moneyCount !== 1 ? 's' : '')">
+                    </span>
+                </div>
+
+                <div class="table-wrap fade-in-up">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:140px;">id <span style="color:var(--clr-accent-2); font-weight:400;">(PK)</span></th>
+                                <th>donation_id <span style="color:var(--clr-accent-3, var(--clr-accent-2)); font-weight:400;">(FK)</span></th>
+                                <th>transaction_id</th>
+                                <th style="max-width:200px;">qr_payload</th>
+                                <th>status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <template x-for="r in $store.databaseView.moneyRows" :key="r.id">
+                                <tr>
+                                    <td><span class="pk-cell" :title="r.id" x-text="r.id"></span></td>
+                                    <td><span class="fk-cell" :title="r.donation_id" x-text="r.donation_id"></span></td>
+                                    <td>
+                                        <span class="mono-cell" style="color:var(--clr-accent);"
+                                              x-text="r.transaction_id"></span>
+                                    </td>
+                                    <td>
+                                        <span class="mono-cell"
+                                              :title="r.qr_payload"
+                                              x-text="r.qr_payload && r.qr_payload.length > 28 ? r.qr_payload.slice(0,28) + '…' : r.qr_payload">
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge"
+                                              :class="r.status ? 'completed' : 'pending'"
+                                              x-text="r.status ? '✓ true' : '○ false'">
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr x-show="$store.databaseView.moneyRows.length === 0">
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">💳</div>
+                                        <p>No financial donations recorded yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+
+        </div>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/service.js"></script>
+    <script src="js/alpine-store.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+    <script>
+        window._dmsSession = requireAdmin();
+        if (!window._dmsSession) throw new Error('Admin access required');
+        renderHeaderProfile(window._dmsSession);
+    </script>
+</body>
+
+</html>

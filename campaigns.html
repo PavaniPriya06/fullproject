@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campaigns — DonateHub</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="page-wrapper">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="dashboard.html" class="header-brand">
+                    <div class="brand-icon">💝</div>
+                    <span class="text-gradient">DonateHub</span>
+                </a>
+                <nav class="header-nav">
+                    <button class="btn btn-primary btn-sm" onclick="redirectTo('donate.html')">+ Create
+                        Campaign</button>
+                    <div style="position:relative;">
+                        <button class="profile-btn" id="profileBtn" aria-expanded="false"></button>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-user-name"></div>
+                                <div class="dropdown-user-email"></div>
+                            </div>
+                            <a href="dashboard.html" class="dropdown-item">🏠 Dashboard</a>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item danger" id="logoutBtn">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main style="flex:1; padding-bottom: 4rem;">
+        <div class="container">
+            <!-- Hero -->
+            <div class="page-hero fade-in-up">
+                <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+                <h1 class="page-hero-title">📣 Active <span class="text-gradient">Campaigns</span></h1>
+                <p class="page-hero-sub">Support community-driven fundraising initiatives and make your gift go further.
+                </p>
+            </div>
+
+            <!-- Search + Filters -->
+            <div class="fade-in-up fade-in-up-2">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="campaignSearch" placeholder="Search campaigns…"
+                        oninput="filterCampaigns()" />
+                </div>
+                <div class="filter-pills" id="categoryFilters">
+                    <button class="pill active" onclick="setFilter(this,'All')">All</button>
+                    <button class="pill" onclick="setFilter(this,'Education')">🎓 Education</button>
+                    <button class="pill" onclick="setFilter(this,'Healthcare')">🏥 Healthcare</button>
+                    <button class="pill" onclick="setFilter(this,'Environment')">🌿 Environment</button>
+                    <button class="pill" onclick="setFilter(this,'Hunger')">🍽️ Hunger</button>
+                    <button class="pill" onclick="setFilter(this,'Disaster')">🆘 Disaster</button>
+                </div>
+            </div>
+
+            <!-- Campaigns Grid -->
+            <div class="campaigns-grid fade-in-up fade-in-up-3" id="campaignsGrid"></div>
+        </div>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const session = requireAuth();
+        if (!session) throw new Error('Unauthenticated');
+        renderHeaderProfile(session);
+
+        const CAMPAIGNS = [
+            { id: 1, title: 'Books for Every Child', cat: 'Education', emoji: '📚', raised: 18400, goal: 25000, days: 12, desc: 'Providing textbooks and supplies to underprivileged students across rural schools.' },
+            { id: 2, title: 'Clean Water Initiative', cat: 'Healthcare', emoji: '💧', raised: 42000, goal: 50000, days: 7, desc: 'Drilling freshwater wells for 5 villages in drought-hit regions.' },
+            { id: 3, title: 'Reforestation Drive 2025', cat: 'Environment', emoji: '🌳', raised: 9800, goal: 30000, days: 28, desc: 'Planting 100,000 trees to restore degraded forest cover.' },
+            { id: 4, title: 'Midday Meals for All', cat: 'Hunger', emoji: '🍱', raised: 31500, goal: 35000, days: 5, desc: 'Funding hot nutritious meals for 2,000 school children daily.' },
+            { id: 5, title: 'Flood Relief — Kerala', cat: 'Disaster', emoji: '🆘', raised: 67000, goal: 80000, days: 3, desc: 'Emergency relief kits and temporary shelters for flood-displaced families.' },
+            { id: 6, title: 'Digital Classrooms', cat: 'Education', emoji: '💻', raised: 14200, goal: 20000, days: 19, desc: 'Equipping government schools with computers and high-speed internet.' },
+            { id: 7, title: 'Mobile Health Clinics', cat: 'Healthcare', emoji: '🚑', raised: 28000, goal: 40000, days: 14, desc: 'Bringing doctors and diagnostics to remote villages every week.' },
+            { id: 8, title: 'Solar for Villages', cat: 'Environment', emoji: '☀️', raised: 5500, goal: 15000, days: 35, desc: 'Installing solar panels to power off-grid rural communities.' },
+        ];
+
+        let activeFilter = 'All';
+
+        function setFilter(btn, cat) {
+            qsa('#categoryFilters .pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            activeFilter = cat;
+            filterCampaigns();
+        }
+
+        function filterCampaigns() {
+            const q = qs('#campaignSearch').value.toLowerCase();
+            const filtered = CAMPAIGNS.filter(c => {
+                const matchCat = activeFilter === 'All' || c.cat === activeFilter;
+                const matchQ = c.title.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q);
+                return matchCat && matchQ;
+            });
+            renderCampaigns(filtered);
+        }
+
+        function renderCampaigns(list) {
+            const grid = qs('#campaignsGrid');
+            if (!list.length) {
+                grid.innerHTML = `<p style="color:var(--clr-text-3);grid-column:1/-1;text-align:center;padding:3rem;">No campaigns found.</p>`;
+                return;
+            }
+            grid.innerHTML = list.map(c => {
+                const pct = Math.min(100, Math.round((c.raised / c.goal) * 100));
+                return `
+          <div class="campaign-card">
+            <div class="campaign-img" style="font-size:4rem;">${c.emoji}</div>
+            <div class="campaign-body">
+              <span class="campaign-tag">${c.cat}</span>
+              <h3 class="campaign-title">${c.title}</h3>
+              <p class="campaign-desc">${c.desc}</p>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:${pct}%"></div>
+              </div>
+              <div class="progress-labels">
+                <span>${formatCurrency(c.raised)} raised</span>
+                <span>${pct}% of ${formatCurrency(c.goal)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                <span style="font-size:.75rem; color:var(--clr-text-3);">⏱ ${c.days} days left</span>
+                <a href="donate.html" class="btn btn-ghost btn-sm">Donate →</a>
+              </div>
+            </div>
+          </div>`;
+            }).join('');
+        }
+
+        // Initial render
+        renderCampaigns(CAMPAIGNS);
+    </script>
+</body>
+
+</html>
