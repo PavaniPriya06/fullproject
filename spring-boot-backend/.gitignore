@@ -1,0 +1,69 @@
+# Ignore patterns for Maven and Spring Boot projects
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.code-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+mvnw.cmd
+
+# Spring Boot
+.env
+.env.local
+logs/
+*.log
+
+# Gradle (if used)
+.gradle/
+build/
+
+# Node (if frontend is included)
+node_modules/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+
+# Test coverage
+coverage/
+.coverage
+.jacoco
+
+# Sensitive files
+*.key
+*.pem
+*.pfx
+
+# Build artifacts
+bin/
+out/
