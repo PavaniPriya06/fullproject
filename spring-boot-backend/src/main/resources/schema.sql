@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_role ON users(role);
+CREATE INDEX idx_email ON users(email);
+CREATE INDEX idx_role ON users(role);
 
 -- Donations Table (Master)
 CREATE TABLE IF NOT EXISTS donations (
@@ -33,10 +33,10 @@ CREATE TABLE IF NOT EXISTS donations (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_id ON donations(user_id);
-CREATE INDEX IF NOT EXISTS idx_type ON donations(type);
-CREATE INDEX IF NOT EXISTS idx_status ON donations(donation_status);
-CREATE INDEX IF NOT EXISTS idx_created_at ON donations(created_at);
+CREATE INDEX idx_user_id ON donations(user_id);
+CREATE INDEX idx_type ON donations(type);
+CREATE INDEX idx_status ON donations(donation_status);
+CREATE INDEX idx_created_at ON donations(created_at);
 
 -- Food Donations Table
 CREATE TABLE IF NOT EXISTS food_donations (
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS food_donations (
     FOREIGN KEY (donation_id) REFERENCES donations(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_donation_id_food ON food_donations(donation_id);
+CREATE INDEX idx_donation_id_food ON food_donations(donation_id);
 
 -- Apparel Donations Table
 CREATE TABLE IF NOT EXISTS apparel_donations (
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS apparel_donations (
     FOREIGN KEY (donation_id) REFERENCES donations(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_donation_id_apparel ON apparel_donations(donation_id);
+CREATE INDEX idx_donation_id_apparel ON apparel_donations(donation_id);
 
 -- Money Donations Table
 CREATE TABLE IF NOT EXISTS money_donations (
@@ -74,8 +74,8 @@ CREATE TABLE IF NOT EXISTS money_donations (
     FOREIGN KEY (donation_id) REFERENCES donations(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_donation_id_money ON money_donations(donation_id);
-CREATE INDEX IF NOT EXISTS idx_transaction_id ON money_donations(transaction_id);
+CREATE INDEX idx_donation_id_money ON money_donations(donation_id);
+CREATE INDEX idx_transaction_id ON money_donations(transaction_id);
 
 -- Notifications Table
 CREATE TABLE IF NOT EXISTS notifications (
@@ -90,8 +90,8 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (donation_id) REFERENCES donations(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_id_notif ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_is_read ON notifications(is_read);
+CREATE INDEX idx_user_id_notif ON notifications(user_id);
+CREATE INDEX idx_is_read ON notifications(is_read);
 
 -- Insert Default Admin User (password: Admin@123 hashed with BCrypt)
 -- BCrypt hash of "Admin@123": $2a$10$slYQmyNdGzin7olVN3p5Be7DlH.PKZbv5H8KnzzVgXXbVxzy2CjSu

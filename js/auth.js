@@ -50,38 +50,56 @@ function _seedAdminIfNeeded() {
 
 /* ─── Register ───────────────────────────────────────────── */
 function registerUser(fullName, email, password) {
-    const users      = _loadUsers();
-    const emailLower = email.trim().toLowerCase();
-    if (users.find(function (u) { return u.email === emailLower; })) {
-        return { success: false, message: 'An account with this email already exists.' };
-    }
-    const user = {
-        id:             'u_' + Date.now(),
-        fullName:       fullName.trim(),
-        email:          emailLower,
-        password:       _hashPassword(password),
-        role:           'user',          /* all self-registered accounts are donors */
-        joinedAt:       new Date().toISOString(),
-        avatar:         null,
-        totalDonated:   0,
-        donationsCount: 0
-    };
-    users.push(user);
-    _saveUsers(users);
-    _startSession(user);
-    return { success: true, user };
+    // Call backend API for registration
+    fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            showToast(data.message || 'Registration failed', 'error');
+            return;
+        }
+        // Save JWT token from backend
+        localStorage.setItem('auth_token', data.token);
+        // Save session
+        _startSession(data.user);
+        showToast('Registration successful!', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    })
+    .catch(err => {
+        console.error('Registration error:', err);
+        showToast('Registration failed: ' + err.message, 'error');
+    });
 }
 
 /* ─── Login ──────────────────────────────────────────────── */
 function loginUser(email, password) {
-    const users      = _loadUsers();
-    const emailLow   = email.trim().toLowerCase();
-    const user       = users.find(function (u) { return u.email === emailLow; });
-    if (!user) return { success: false, message: 'No account found with this email.' };
-    if (user.password !== _hashPassword(password))
-        return { success: false, message: 'Incorrect password.' };
-    _startSession(user);
-    return { success: true, user };
+    // Call backend API for login
+    fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            showToast(data.message || 'Login failed', 'error');
+            return;
+        }
+        // Save JWT token from backend
+        localStorage.setItem('auth_token', data.token);
+        // Save session
+        _startSession(data.user);
+        showToast('Login successful!', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+    })
+    .catch(err => {
+        console.error('Login error:', err);
+        showToast('Login failed: ' + err.message, 'error');
+    });
 }
 
 /* ─── Session ────────────────────────────────────────────── */

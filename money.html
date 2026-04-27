@@ -138,6 +138,22 @@
             font-weight: 600;
             white-space: nowrap;
         }
+
+        /* ── Payment Form Animation ── */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
     </style>
 </head>
 
@@ -147,8 +163,7 @@
 -->
 <body class="page-wrapper" x-data
       x-init="
-        window.addEventListener('pagehide',    () => $store.moneyForm.stopScanner());
-        window.addEventListener('beforeunload', () => $store.moneyForm.stopScanner());
+        // Alpine is ready
       ">
     <div class="bg-orb bg-orb-1"></div>
     <div class="bg-orb bg-orb-2"></div>
@@ -192,129 +207,271 @@
             <div class="glass-card module-card fade-in-up" style="padding:2rem;">
 
                 <!-- ══════════════════════════════════════════════ -->
-                <!-- STATE: idle — always visible on first paint    -->
+                <!-- Advanced Payment Form with Enhanced Features       -->
                 <!-- ══════════════════════════════════════════════ -->
-                <div x-show="$store.moneyForm.state === 'idle'">
-                    <div style="text-align:center; padding:var(--sp-6) 0;">
-                        <div style="font-size:4rem; margin-bottom:var(--sp-4);">📷</div>
-                        <h2 style="font-size:1.25rem; font-weight:700; margin-bottom:var(--sp-3);">QR Payment Scanner</h2>
-                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); margin-bottom:var(--sp-6); max-width:360px; margin-left:auto; margin-right:auto;">
-                            Point your camera at a payment QR code. The scanner will automatically detect and decode it.
+                <div style="max-width:700px; margin:0 auto;">
+                    
+                    <!-- Header with Progress -->
+                    <div style="text-align:center; margin-bottom:var(--sp-8);">
+                        <div style="font-size:3.5rem; margin-bottom:var(--sp-3);">💳</div>
+                        <h1 style="font-size:1.5rem; font-weight:800; margin-bottom:var(--sp-2);">Complete Your Donation</h1>
+                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); max-width:400px; margin:0 auto;">
+                            Quick and secure payment donation in 3 simple steps
                         </p>
-
-                        <!-- Camera error alert -->
-                        <p x-show="$store.moneyForm.cameraError"
-                           x-cloak
-                           style="color:var(--clr-danger); font-size:var(--fs-sm); text-align:center; padding:var(--sp-3); margin-bottom:var(--sp-4);">
-                            ⚠️ Camera access denied or not available. Please allow camera permissions and try again.
-                        </p>
-
-                        <button
-                            class="btn btn-primary"
-                            style="min-width:200px;"
-                            @click="$store.moneyForm.startScanner()"
-                            :disabled="$store.moneyForm.isLoading"
-                        >
-                            <div class="btn-spinner" x-show="$store.moneyForm.isLoading"></div>
-                            <span class="btn-label"
-                                  x-text="$store.moneyForm.isLoading ? 'Starting…' : '📷 Open Camera'">
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ══════════════════════════════════════════════ -->
-                <!-- STATE: scanning                               -->
-                <!-- ══════════════════════════════════════════════ -->
-                <div x-show="$store.moneyForm.state === 'scanning'" x-cloak>
-                    <h2 style="font-size:1.125rem; font-weight:700; margin-bottom:var(--sp-4); text-align:center;">
-                        <span style="background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-                            Scanning…
-                        </span>
-                    </h2>
-
-                    <div id="scannerContainer">
-                        <video id="cameraVideo" autoplay muted playsinline></video>
-                        <canvas id="scanCanvas"></canvas>
-                        <div class="scan-overlay">
-                            <div class="scan-corner tl"></div>
-                            <div class="scan-corner tr"></div>
-                            <div class="scan-corner bl"></div>
-                            <div class="scan-corner br"></div>
-                            <div class="scan-laser"></div>
+                        
+                        <!-- Progress Bar -->
+                        <div style="margin-top:var(--sp-6); height:4px; background:var(--clr-border); border-radius:4px; overflow:hidden;">
+                            <div :style="{
+                                     width: selectedTrust && paymentCode && amount ? '100%' : (selectedTrust && paymentCode ? '66%' : (selectedTrust ? '33%' : '0%')),
+                                     height: '100%',
+                                     background: 'linear-gradient(90deg, #6c63ff 0%, #8b7cff 100%)',
+                                     transition: 'width 0.3s ease'
+                                 }">
+                            </div>
                         </div>
                     </div>
 
-                    <p style="text-align:center; color:var(--clr-text-3); font-size:var(--fs-sm); margin-top:var(--sp-4);">
-                        Hold the QR code steady inside the viewfinder
-                    </p>
+                    <form @submit.prevent="$store.moneyForm.processPaymentCode()" style="display:flex; flex-direction:column; gap:var(--sp-6);">
+                        
+                        <!-- Step 1: Organization Selection Cards -->
+                        <div>
+                            <div style="display:flex; align-items:center; gap:var(--sp-2); margin-bottom:var(--sp-4);">
+                                <div style="background: linear-gradient(135deg, #6c63ff 0%, #8b7cff 100%); color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">1</div>
+                                <label style="font-weight:700; font-size:var(--fs-sm);">Select Organization</label>
+                                <div x-show="$store.moneyForm.selectedTrust" style="margin-left:auto; color:#28a745; font-weight:600; font-size:var(--fs-xs);">✓ Selected</div>
+                            </div>
+                            
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-3); margin-bottom:var(--sp-4);">
+                                <template x-for="trust in $store.moneyForm.trusts" :key="trust.id">
+                                    <button 
+                                        type="button"
+                                        @click="$store.moneyForm.selectedTrust = trust.id"
+                                        :style="{
+                                            padding: 'var(--sp-4)',
+                                            border: '2px solid ' + ($store.moneyForm.selectedTrust === trust.id ? '#6c63ff' : 'var(--clr-border)'),
+                                            borderRadius: 'var(--radius-lg)',
+                                            background: $store.moneyForm.selectedTrust === trust.id ? 'rgba(108,99,255,0.15)' : 'var(--clr-surface)',
+                                            cursor: 'pointer',
+                                            textAlign: 'left',
+                                            transition: 'all 0.3s ease',
+                                            boxShadow: $store.moneyForm.selectedTrust === trust.id ? '0 4px 12px rgba(108,99,255,0.2)' : 'none'
+                                        }"
+                                    >
+                                        <div style="font-weight:600; font-size:var(--fs-sm); color:var(--clr-primary-l); margin-bottom:var(--sp-1);">📌 <span x-text="trust.name"></span></div>
+                                        <div style="font-size:var(--fs-xs); color:var(--clr-text-3); margin-bottom:var(--sp-2);" x-text="trust.category"></div>
+                                        <div x-show="$store.moneyForm.selectedTrust === trust.id" style="color:#6c63ff; font-weight:700; font-size:1rem;">✓</div>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
 
-                    <div style="text-align:center; margin-top:var(--sp-5);">
-                        <button class="btn btn-ghost btn-sm"
-                                @click="$store.moneyForm.stopScanner(); $store.moneyForm.state = 'idle'">
-                            ✕ Cancel Scan
-                        </button>
-                    </div>
-                </div>
+                        <!-- Step 2: PAYMENT CODE SCANNER - PROMINENT -->
+                        <div style="background: linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(139,124,255,0.1) 100%); border: 2px dashed #6c63ff; border-radius: var(--radius-lg); padding: var(--sp-6); position: relative;">
+                            
+                            <!-- Scanner Header -->
+                            <div style="display:flex; align-items:center; gap:var(--sp-2); margin-bottom:var(--sp-4);">
+                                <div style="background: linear-gradient(135deg, #6c63ff 0%, #8b7cff 100%); color:white; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px;">📱</div>
+                                <div>
+                                    <div style="font-weight:700; font-size:1.1rem; color:var(--clr-text);">Payment Code Scanner</div>
+                                    <div style="color:var(--clr-text-3); font-size:var(--fs-xs);">Step 2 of 3</div>
+                                </div>
+                                <div x-show="$store.moneyForm.paymentCode" style="margin-left:auto; background:#28a745; color:white; padding:var(--sp-1) var(--sp-3); border-radius:var(--radius-full); font-weight:600; font-size:var(--fs-xs);">✓ Code Captured</div>
+                            </div>
+                            
+                            <!-- Instruction Text -->
+                            <div style="text-align:center; margin-bottom:var(--sp-5); padding:var(--sp-4); background:rgba(108,99,255,0.05); border-radius:var(--radius-md); border:1px solid rgba(108,99,255,0.2);">
+                                <div style="font-size:2rem; margin-bottom:var(--sp-2);">🎯</div>
+                                <div style="font-size:var(--fs-sm); font-weight:600; color:var(--clr-text); margin-bottom:var(--sp-1);">Ready to Scan</div>
+                                <div style="font-size:var(--fs-xs); color:var(--clr-text-3);">Use your barcode scanner or enter code manually</div>
+                            </div>
+                            
+                            <!-- Large Scanner Input -->
+                            <div style="position:relative; margin-bottom:var(--sp-4);">
+                                <input 
+                                    type="text"
+                                    x-model="$store.moneyForm.paymentCode"
+                                    placeholder="Place cursor here and scan or type..."
+                                    autofocus
+                                    required
+                                    @input="$store.moneyForm.cameraError = ''"
+                                    @keyup="$store.moneyForm.formatPaymentCode()"
+                                    style="width:100%; padding:var(--sp-5) var(--sp-4) var(--sp-5) var(--sp-6); border:3px solid #6c63ff; border-radius:var(--radius-lg); font-size:1rem; font-family:monospace; font-weight:700; letter-spacing:2px; background:white; color:#333; transition:all 0.3s ease; box-shadow: 0 4px 12px rgba(108,99,255,0.15);"
+                                />
+                                <div style="position:absolute; left:var(--sp-4); top:50%; transform:translateY(-50%); font-size:1.8rem; animation: pulse 1.5s infinite;">
+                                    📱
+                                </div>
+                                <div x-show="$store.moneyForm.paymentCode" style="position:absolute; right:var(--sp-4); top:50%; transform:translateY(-50%); color:#28a745; font-size:1.5rem;">
+                                    ✓
+                                </div>
+                            </div>
+                            
+                            <!-- Scanner Status -->
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-3); margin-bottom:var(--sp-4);">
+                                <div style="padding:var(--sp-3); background:var(--clr-surface); border-radius:var(--radius-md); text-align:center;">
+                                    <div style="font-size:var(--fs-xs); color:var(--clr-text-3); margin-bottom:var(--sp-1);">Code Length</div>
+                                    <div style="font-size:1.5rem; font-weight:700; color:#6c63ff;" x-text="$store.moneyForm.paymentCode.length + ' chars'"></div>
+                                </div>
+                                <div style="padding:var(--sp-3); background:var(--clr-surface); border-radius:var(--radius-md); text-align:center;">
+                                    <div style="font-size:var(--fs-xs); color:var(--clr-text-3); margin-bottom:var(--sp-1);">Status</div>
+                                    <div style="font-size:1.5rem; font-weight:700;" :style="{ color: $store.moneyForm.paymentCode ? '#28a745' : '#999' }" x-text="$store.moneyForm.paymentCode ? '✓ Ready' : '⏳ Waiting'"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Timer-style scanning animation -->
+                            <div style="height:3px; background:var(--clr-border); border-radius:2px; overflow:hidden; margin-bottom:var(--sp-3);">
+                                <div x-show="!$store.moneyForm.paymentCode" style="height:100%; background: linear-gradient(90deg, transparent, #6c63ff, #8b7cff, transparent); animation: scan 2s infinite;"></div>
+                                <div x-show="$store.moneyForm.paymentCode" style="height:100%; width:100%; background:#28a745;"></div>
+                            </div>
+                            
+                            <!-- Instructions -->
+                            <div style="font-size:var(--fs-xs); color:var(--clr-text-3); text-align:center;">
+                                <p style="margin:0; margin-bottom:var(--sp-2);">💡 Ensure the input field is focused (cursor blinking)</p>
+                                <p style="margin:0;">Scan barcode or type code and press Enter</p>
+                            </div>
+                        </div>
 
-                <!-- ══════════════════════════════════════════════ -->
-                <!-- STATE: detected                               -->
-                <!-- ══════════════════════════════════════════════ -->
-                <div x-show="$store.moneyForm.state === 'detected'" x-cloak>
-                    <div style="text-align:center; margin-bottom:var(--sp-5);">
-                        <div style="font-size:2.5rem; margin-bottom:var(--sp-3);">✅</div>
-                        <h2 style="font-size:1.25rem; font-weight:700; color:var(--clr-success);">QR Code Detected!</h2>
-                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); margin-top:var(--sp-2);">
-                            Review the payment string below, then confirm to complete the transaction.
-                        </p>
-                    </div>
+                        <!-- Step 3: Amount with Formatting -->
+                        <div>
+                            <div style="display:flex; align-items:center; gap:var(--sp-2); margin-bottom:var(--sp-3);">
+                                <div style="background: linear-gradient(135deg, #6c63ff 0%, #8b7cff 100%); color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;">3</div>
+                                <label style="font-weight:700; font-size:var(--fs-sm);">Donation Amount</label>
+                                <div x-show="$store.moneyForm.amount > 0" style="margin-left:auto; color:#28a745; font-weight:600; font-size:var(--fs-xs);" x-text="'₹' + $store.moneyForm.amount.toLocaleString('en-IN')"></div>
+                            </div>
+                            
+                            <div style="position:relative; margin-bottom:var(--sp-3);">
+                                <div style="position:absolute; left:var(--sp-3); top:50%; transform:translateY(-50%); font-size:1.3rem;">₹</div>
+                                <input 
+                                    type="number"
+                                    x-model.number="$store.moneyForm.amount"
+                                    placeholder="Enter amount"
+                                    step="1"
+                                    min="10"
+                                    required
+                                    @input="$store.moneyForm.cameraError = ''"
+                                    style="width:100%; padding:var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5); border:2px solid var(--clr-border); border-radius:var(--radius-md); font-size:var(--fs-sm); font-weight:600; transition:all 0.3s ease;"
+                                />
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-between; font-size:var(--fs-xs); color:var(--clr-text-3);">
+                                <p style="margin:0;">Minimum amount: ₹10</p>
+                                <p style="margin:0;" x-text="$store.moneyForm.amount > 0 ? 'Total: ₹' + $store.moneyForm.amount.toLocaleString('en-IN') : 'Enter amount'"></p>
+                            </div>
+                        </div>
 
-                    <div class="qr-result-card" style="margin-bottom:var(--sp-5);">
-                        <div class="qr-result-label">Payment String</div>
-                        <!-- x-text bound directly to store qrPayload -->
-                        <div class="qr-result-payload" x-text="$store.moneyForm.qrPayload"></div>
-                        <div class="txn-badge" x-text="$store.moneyForm.txnRef"></div>
-                    </div>
+                        <!-- Transaction Summary Box -->
+                        <div x-show="$store.moneyForm.selectedTrust && $store.moneyForm.paymentCode && $store.moneyForm.amount > 0" 
+                             x-cloak
+                             style="padding:var(--sp-4); background:linear-gradient(135deg, rgba(108,99,255,0.1) 0%, rgba(139,124,255,0.05) 100%); border:1px solid #6c63ff; border-radius:var(--radius-md);">
+                            <div style="font-weight:700; margin-bottom:var(--sp-3); color:var(--clr-primary-l);">📋 Transaction Summary</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-2); font-size:var(--fs-xs);">
+                                <div>
+                                    <div style="color:var(--clr-text-3); margin-bottom:var(--sp-1);">Organization</div>
+                                    <div style="font-weight:600;" x-text="$store.moneyForm.trusts.find(t => t.id === $store.moneyForm.selectedTrust)?.name || 'Select'"></div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--clr-text-3); margin-bottom:var(--sp-1);">Amount</div>
+                                    <div style="font-weight:600; color:#28a745;" x-text="'₹' + $store.moneyForm.amount.toLocaleString('en-IN')"></div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--clr-text-3); margin-bottom:var(--sp-1);">Payment Code</div>
+                                    <div style="font-weight:600; font-family:monospace; font-size:var(--fs-xs);" x-text="$store.moneyForm.paymentCode.substring(0, 10) + ($store.moneyForm.paymentCode.length > 10 ? '...' : '')"></div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--clr-text-3); margin-bottom:var(--sp-1);">Status</div>
+                                    <div style="font-weight:600; color:#6c63ff;">Ready</div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div style="display:flex; gap:var(--sp-3);">
-                        <button class="btn btn-ghost" style="flex:1;"
-                                @click="$store.moneyForm.retryScanner()">
-                            🔄 Re-scan
-                        </button>
-                        <button class="btn btn-primary" style="flex:2;"
-                                @click="$store.moneyForm.confirmTransaction()"
-                                :disabled="$store.moneyForm.isLoading">
-                            <div class="btn-spinner" x-show="$store.moneyForm.isLoading"></div>
-                            <span class="btn-label"
-                                  x-text="$store.moneyForm.isLoading ? 'Verifying…' : '✓ Complete Transaction'">
-                            </span>
-                        </button>
-                    </div>
-                </div>
+                        <!-- Error Message -->
+                        <div x-show="$store.moneyForm.cameraError"
+                             x-cloak
+                             style="padding:var(--sp-4); background:#dc3545; color:white; border-radius:var(--radius-md); display:flex; align-items:center; gap:var(--sp-3); font-size:var(--fs-sm);">
+                            <span style="font-size:1.5rem;">⚠️</span>
+                            <span x-text="$store.moneyForm.cameraError"></span>
+                        </div>
 
-                <!-- ══════════════════════════════════════════════ -->
-                <!-- STATE: confirmed                              -->
-                <!-- ══════════════════════════════════════════════ -->
-                <div x-show="$store.moneyForm.state === 'confirmed'" x-cloak>
-                    <div style="text-align:center; padding:var(--sp-6) 0;">
-                        <div style="font-size:4rem; margin-bottom:var(--sp-4);">🎉</div>
-                        <h2 style="font-size:1.375rem; font-weight:800; margin-bottom:var(--sp-3);" class="text-gradient">
-                            Transaction Recorded!
-                        </h2>
-                        <p style="color:var(--clr-text-2); font-size:var(--fs-sm); max-width:360px; margin:0 auto var(--sp-6);">
-                            Your financial donation has been logged and verified. Thank you for your generosity!
-                        </p>
-                        <div style="display:flex; gap:var(--sp-3); justify-content:center; flex-wrap:wrap;">
-                            <button class="btn btn-primary btn-sm"
-                                    @click="$store.moneyForm.resetToIdle()">
-                                📷 Scan Another
+                        <!-- Submit Button with Validation Status -->
+                        <div>
+                            <button
+                                type="submit"
+                                :disabled="$store.moneyForm.isLoading || !$store.moneyForm.selectedTrust || !$store.moneyForm.paymentCode || !$store.moneyForm.amount || $store.moneyForm.amount < 10"
+                                :style="{
+                                    width: '100%',
+                                    padding: 'var(--sp-5)',
+                                    fontSize: 'var(--fs-sm)',
+                                    fontWeight: '700',
+                                    letterSpacing: '0.5px',
+                                    border: 'none',
+                                    borderRadius: 'var(--radius-lg)',
+                                    cursor: $store.moneyForm.isLoading || !$store.moneyForm.selectedTrust || !$store.moneyForm.paymentCode || !$store.moneyForm.amount || $store.moneyForm.amount < 10 ? 'not-allowed' : 'pointer',
+                                    background: $store.moneyForm.isLoading || !$store.moneyForm.selectedTrust || !$store.moneyForm.paymentCode || !$store.moneyForm.amount || $store.moneyForm.amount < 10 ? 'linear-gradient(135deg, #ccc 0%, #999 100%)' : 'linear-gradient(135deg, #6c63ff 0%, #8b7cff 100%)',
+                                    color: 'white',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: $store.moneyForm.isLoading || !$store.moneyForm.selectedTrust || !$store.moneyForm.paymentCode || !$store.moneyForm.amount || $store.moneyForm.amount < 10 ? 'none' : '0 4px 15px rgba(108,99,255,0.4)',
+                                    textTransform: 'uppercase',
+                                    opacity: $store.moneyForm.isLoading || !$store.moneyForm.selectedTrust || !$store.moneyForm.paymentCode || !$store.moneyForm.amount || $store.moneyForm.amount < 10 ? '0.6' : '1'
+                                }"
+                            >
+                                <span x-show="!$store.moneyForm.isLoading" style="display:flex; align-items:center; justify-content:center; gap:var(--sp-3); font-size:1.1rem;">
+                                    <span>✓</span>
+                                    <span>Complete Donation</span>
+                                </span>
+                                <span x-show="$store.moneyForm.isLoading" style="display:flex; align-items:center; justify-content:center; gap:var(--sp-2);">
+                                    <span style="display:inline-block; animation:spin 1s linear infinite;">⏳</span>
+                                    <span>Processing...</span>
+                                </span>
                             </button>
-                            <a href="dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+                            
+                            <!-- Validation checklist -->
+                            <div style="margin-top:var(--sp-4); padding:var(--sp-3); background:rgba(108,99,255,0.05); border-radius:var(--radius-md); font-size:var(--fs-xs);">
+                                <div style="font-weight:600; margin-bottom:var(--sp-2); color:var(--clr-text);">Requirements:</div>
+                                <div style="display:grid; gap:var(--sp-2);">
+                                    <div style="display:flex; align-items:center; gap:var(--sp-2);">
+                                        <span x-show="$store.moneyForm.selectedTrust" style="color:#28a745; font-weight:700;">✓</span>
+                                        <span x-show="!$store.moneyForm.selectedTrust" style="color:#999; font-weight:700;">○</span>
+                                        <span :style="{ color: $store.moneyForm.selectedTrust ? '#28a745' : '#999' };">Organization selected</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:var(--sp-2);">
+                                        <span x-show="$store.moneyForm.paymentCode" style="color:#28a745; font-weight:700;">✓</span>
+                                        <span x-show="!$store.moneyForm.paymentCode" style="color:#999; font-weight:700;">○</span>
+                                        <span :style="{ color: $store.moneyForm.paymentCode ? '#28a745' : '#999' };">Payment code entered</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:var(--sp-2);">
+                                        <span x-show="$store.moneyForm.amount >= 10" style="color:#28a745; font-weight:700;">✓</span>
+                                        <span x-show="$store.moneyForm.amount < 10" style="color:#999; font-weight:700;">○</span>
+                                        <span :style="{ color: $store.moneyForm.amount >= 10 ? '#28a745' : '#999' };">Amount ≥ ₹10 <span x-show="$store.moneyForm.amount > 0" x-text="'(₹' + $store.moneyForm.amount + ')'"></span></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-            </div>
+                        <!-- Quick Amount Buttons -->
+                        <div style="margin-top:var(--sp-4);">
+                            <p style="font-size:var(--fs-xs); color:var(--clr-text-3); margin-bottom:var(--sp-2);">Quick Select:</p>
+                            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:var(--sp-2);">
+                                <button type="button" @click="$store.moneyForm.amount = 100" style="padding:var(--sp-2); background:var(--clr-surface); border:1px solid var(--clr-border); border-radius:var(--radius-md); cursor:pointer; font-weight:600; font-size:var(--fs-xs);">₹100</button>
+                                <button type="button" @click="$store.moneyForm.amount = 500" style="padding:var(--sp-2); background:var(--clr-surface); border:1px solid var(--clr-border); border-radius:var(--radius-md); cursor:pointer; font-weight:600; font-size:var(--fs-xs);">₹500</button>
+                                <button type="button" @click="$store.moneyForm.amount = 1000" style="padding:var(--sp-2); background:var(--clr-surface); border:1px solid var(--clr-border); border-radius:var(--radius-md); cursor:pointer; font-weight:600; font-size:var(--fs-xs);">₹1000</button>
+                                <button type="button" @click="$store.moneyForm.amount = 5000" style="padding:var(--sp-2); background:var(--clr-surface); border:1px solid var(--clr-border); border-radius:var(--radius-md); cursor:pointer; font-weight:600; font-size:var(--fs-xs);">₹5000</button>
+                            </div>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div style="padding:var(--sp-4); background:rgba(108,99,255,0.05); border-left:4px solid #6c63ff; border-radius:var(--radius-md); font-size:var(--fs-xs); color:var(--clr-text-2);">
+                            <div style="font-weight:600; margin-bottom:var(--sp-2); color:var(--clr-primary-l); display:flex; align-items:center; gap:var(--sp-2);">
+                                <span>💡</span>
+                                <span>Pro Tips:</span>
+                            </div>
+                            <ul style="margin:0; padding-left:var(--sp-4); line-height:1.6;">
+                                <li>✓ Ensure payment code is clear and complete</li>
+                                <li>✓ Double-check the amount before submitting</li>
+                                <li>✓ Keep receipt for your records</li>
+                                <li>✓ Confirmation will be sent via email</li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
 
             <!-- Recent Records -->
             <div class="module-card fade-in-up"
@@ -347,8 +504,12 @@
     <!-- jsQR must load before alpine-store.js since the store calls it -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="js/utils.js"></script>
+    <!-- QR Code Decoder Library (optional - for future QR scanning features) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script> -->
+    
     <script src="js/auth.js"></script>
     <script src="js/service.js"></script>
+    <script src="js/api-bridge.js"></script>
     <script src="js/alpine-store.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 

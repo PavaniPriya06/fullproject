@@ -1,0 +1,219 @@
+===============================================
+MYSQL COMMANDS - SIMPLE BEGINNER GUIDE
+===============================================
+
+📋 WHAT IS MYSQL?
+- Database: A place to store data (like an Excel file)
+- donation_hub: Your database name
+- Tables: Collections of data (like sheets in Excel)
+- Users table: Stores donor information
+- Donations table: Stores donation records
+
+===============================================
+STEP 1: CONNECT TO MYSQL (Run this in PowerShell)
+===============================================
+
+Command:
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h localhost -u root -pwelcome
+
+What it does:
+- Connects to MySQL server
+- Host: localhost (your computer)
+- Username: root
+- Password: welcome
+
+Expected output:
+mysql>  (You'll see this prompt, meaning you're connected)
+
+
+===============================================
+STEP 2: SELECT DATABASE (After connecting to MySQL)
+===============================================
+
+Command:
+USE donation_hub;
+
+What it does:
+- Switches to the donation_hub database
+- Now all commands will work with this database
+
+Expected output:
+Database changed
+
+
+===============================================
+STEP 3: VIEW ALL TABLES
+===============================================
+
+Command:
+SHOW TABLES;
+
+What it does:
+- Lists all tables in the database
+
+Expected output:
++------------------------+
+| Tables_in_donation_hub |
++------------------------+
+| apparel_donations      |
+| donations              |
+| food_donations         |
+| money_donations        |
+| notifications          |
+| users                  |
++------------------------+
+
+
+===============================================
+STEP 4: VIEW ALL USERS
+===============================================
+
+Command:
+SELECT * FROM users;
+
+What it does:
+- Shows all user records
+- Columns: id, full_name, email, role, total_donated, etc.
+
+Expected output:
++----------+----------+----------+-----+-----+
+| id       | fullname | email    | ... | ... |
++----------+----------+----------+-----+-----+
+| admin... | Admin    | admin... | ... | ... |
+| user-001 | Rajesh   | rajesh.. | ... | ... |
++----------+----------+----------+-----+-----+
+
+
+===============================================
+STEP 5: VIEW ALL DONATIONS
+===============================================
+
+Command:
+SELECT * FROM donations;
+
+What it does:
+- Shows all donation records
+- Columns: id, user_id, type, donation_status, created_at
+
+Expected output:
++----------+---------+------+-----------------+----------+
+| id       | user_id | type | donation_status | created_at |
++----------+---------+------+-----------------+----------+
+| donation | user-001| FOOD | PENDING         | 2026-04.. |
++----------+---------+------+-----------------+----------+
+
+
+===============================================
+STEP 6: VIEW DONATIONS WITH DONOR NAMES
+===============================================
+
+Command:
+SELECT d.id, u.full_name, d.type, d.donation_status 
+FROM donations d 
+JOIN users u ON d.user_id = u.id;
+
+What it does:
+- Shows donations WITH donor names (easier to read)
+- Joins two tables: donations and users
+- Shows: Donation ID, Donor Name, Type, Status
+
+Expected output:
++----------+----------+------+-----------------+
+| id       | fullname | type | donation_status |
++----------+----------+------+-----------------+
+| donation | Rajesh   | FOOD | PENDING         |
++----------+----------+------+-----------------+
+
+
+===============================================
+STEP 7: VIEW FOOD DONATIONS WITH DETAILS
+===============================================
+
+Command:
+SELECT d.id, u.full_name, fd.rice_qty, fd.veg_qty, fd.fruits_qty 
+FROM donations d 
+JOIN users u ON d.user_id = u.id 
+JOIN food_donations fd ON d.id = fd.donation_id;
+
+What it does:
+- Shows food donations with quantities
+- Shows: Donation ID, Donor Name, Rice, Vegetables, Fruits
+
+Expected output:
++----------+----------+----------+--------+----------+
+| id       | fullname | rice_qty | veg_qty| fruits_q |
++----------+----------+----------+--------+----------+
+| donation | Rajesh   | 50       | 30     | 20       |
++----------+----------+----------+--------+----------+
+
+
+===============================================
+STEP 8: COUNT DONATIONS
+===============================================
+
+Command:
+SELECT COUNT(*) FROM donations;
+
+What it does:
+- Counts total number of donations
+
+Expected output:
++----------+
+| COUNT(*) |
++----------+
+| 1        |
++----------+
+(Means 1 donation in database)
+
+
+===============================================
+STEP 9: COUNT FOOD DONATIONS
+===============================================
+
+Command:
+SELECT COUNT(*) FROM food_donations;
+
+What it does:
+- Counts total food donations only
+
+Expected output:
++----------+
+| COUNT(*) |
++----------+
+| 1        |
++----------+
+
+
+===============================================
+STEP 10: ADD A TEST USER (Manual Insert)
+===============================================
+
+Command:
+INSERT INTO users (id, full_name, email, password, role, total_donated, donations_count, joined_at, updated_at)
+VALUES ('user-test', 'Test User', 'test@example.com', '$2a$10$slYQmyNdGzin7olVN3p5Be7DlH.PKZbv5H8KnzzVgXXbVxzy2CjSu', 'USER', 0, 0, NOW(), NOW());
+
+What it does:
+- Inserts a new user into the database
+- Password: Admin@123 (hashed)
+
+Expected output:
+Query OK, 1 row affected (0.05 sec)
+
+
+===============================================
+QUICK SUMMARY - USE THESE 3 COMMANDS
+===============================================
+
+1. CONNECT TO MYSQL:
+   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h localhost -u root -pwelcome
+
+2. SELECT DATABASE:
+   USE donation_hub;
+
+3. VIEW DATA:
+   SELECT d.id, u.full_name, d.type, fd.rice_qty, fd.veg_qty, fd.fruits_qty 
+   FROM donations d 
+   JOIN users u ON d.user_id = u.id 
+   JOIN food_donations fd ON d.id = fd.donation_id;
+
+===============================================

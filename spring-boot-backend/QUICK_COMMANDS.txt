@@ -1,0 +1,108 @@
+===============================================
+COPY & PASTE COMMANDS FOR MYSQL
+===============================================
+
+Just copy each command and paste it in PowerShell!
+
+===============================================
+COMMAND 1: Connect to MySQL
+===============================================
+
+Copy this ENTIRE command:
+
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h localhost -u root -pwelcome donation_hub
+
+Paste in PowerShell and press ENTER
+
+You'll see:
+mysql> 
+
+This means you're connected!
+
+
+===============================================
+COMMAND 2: View all users
+===============================================
+
+After connecting, type:
+
+SELECT * FROM users;
+
+Press ENTER
+
+You'll see:
++---------+-----------+----------+------+-------+
+| id      | full_name | email    | role | total |
++---------+-----------+----------+------+-------+
+| admin.. | Admin User| admin@.. | ADMIN| 0     |
+| user-001| Rajesh..  | rajesh..| USER | 1500  |
++---------+-----------+----------+------+-------+
+
+
+===============================================
+COMMAND 3: View all donations
+===============================================
+
+After connecting, type:
+
+SELECT d.id, u.full_name, d.type, d.donation_status FROM donations d JOIN users u ON d.user_id = u.id;
+
+Press ENTER
+
+You'll see a list of all donations with donor names.
+
+
+===============================================
+COMMAND 4: View food donations with details
+===============================================
+
+After connecting, type:
+
+SELECT d.id, u.full_name, fd.rice_qty, fd.veg_qty, fd.fruits_qty FROM donations d JOIN users u ON d.user_id = u.id JOIN food_donations fd ON d.id = fd.donation_id;
+
+Press ENTER
+
+You'll see:
++----+----------+---------+--------+----------+
+| id | fullname | rice_qty| veg_qty| fruits_qty|
++----+----------+---------+--------+----------+
+|... | Rajesh.. | 100     | 50     | 25       |
++----+----------+---------+--------+----------+
+
+
+===============================================
+COMMAND 5: Count total donations
+===============================================
+
+After connecting, type:
+
+SELECT COUNT(*) as total_donations FROM donations;
+
+Press ENTER
+
+You'll see:
++-----------------+
+| total_donations |
++-----------------+
+| 1               |
++-----------------+
+
+(Shows you have 1 donation)
+
+
+===============================================
+HOW TO USE:
+===============================================
+
+1. Open PowerShell
+
+2. Run COMMAND 1 (Connect to MySQL):
+   & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h localhost -u root -pwelcome donation_hub
+
+3. Wait for "mysql>" prompt
+
+4. Then run any of COMMAND 2, 3, 4, or 5
+
+5. To exit MySQL, type:
+   exit
+   

@@ -126,9 +126,32 @@
             <div class="glass-card module-card fade-in-up" style="padding:2rem;">
                 <h2 style="font-size:1.125rem; font-weight:700; margin-bottom:1.75rem;">
                     <span style="background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-                        Enter Quantities
+                        Select Trust & Enter Quantities
                     </span>
                 </h2>
+
+                <!-- Trust Selection -->
+                <div class="field-row">
+                    <label class="form-label" for="trustSelect">🏛️ Select Trust/Organization</label>
+                    <div style="position:relative;">
+                        <select
+                            id="trustSelect"
+                            x-model="$store.foodForm.selectedTrust"
+                            :class="{ 'form-input--error': $store.foodForm.trustError }"
+                            class="form-input"
+                            style="width:100%; padding:0.75rem; border-radius:0.5rem; border:1px solid var(--clr-border);">
+                            <option value="">— Choose a trust —</option>
+                            <template x-for="trust in $store.foodForm.trusts" :key="trust.id">
+                                <option :value="trust.id" x-text="`${trust.name} (${trust.category})`"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <span class="form-error"
+                          x-show="$store.foodForm.trustError"
+                          x-text="$store.foodForm.trustError"
+                          x-cloak>
+                    </span>
+                </div>
 
                 <!-- Rice -->
                 <div class="field-row">
@@ -178,6 +201,30 @@
                     </span>
                 </div>
 
+                <!-- Fruits -->
+                <div class="field-row">
+                    <label class="form-label" for="fruitsQty">🍇 Fruits — Quantity</label>
+                    <div class="qty-wrap">
+                        <input
+                            id="fruitsQty"
+                            type="number"
+                            class="form-input"
+                            placeholder="0"
+                            min="0"
+                            step="1"
+                            style="max-width:200px;"
+                            x-model="$store.foodForm.fruits"
+                            :class="{ 'form-input--error': $store.foodForm.fruitsError }"
+                        />
+                        <span class="unit-badge">kg</span>
+                    </div>
+                    <span class="form-error"
+                          x-show="$store.foodForm.fruitsError"
+                          x-text="$store.foodForm.fruitsError"
+                          x-cloak>
+                    </span>
+                </div>
+
                 <button
                     class="btn btn-primary"
                     style="width:100%;"
@@ -208,6 +255,7 @@
                         <div class="rec-values">
                             <span class="rec-chip">🍚 <span x-text="r.rice_qty"></span> kg Rice</span>
                             <span class="rec-chip">🥦 <span x-text="r.veg_qty"></span> kg Veg</span>
+                            <span class="rec-chip">🍇 <span x-text="r.fruits_qty"></span> kg Fruits</span>
                         </div>
                     </div>
                 </template>
@@ -219,6 +267,7 @@
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/service.js"></script>
+    <script src="js/api-bridge.js"></script>
     <script src="js/alpine-store.js"></script>  <!-- must be before Alpine CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 

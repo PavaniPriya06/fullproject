@@ -78,16 +78,16 @@
                             Select Amount
                         </h2>
                         <div class="amount-grid">
-                            <button class="amount-btn" onclick="selectAmount(this, 10)">$10</button>
-                            <button class="amount-btn selected" onclick="selectAmount(this, 25)">$25</button>
-                            <button class="amount-btn" onclick="selectAmount(this, 50)">$50</button>
-                            <button class="amount-btn" onclick="selectAmount(this, 100)">$100</button>
-                            <button class="amount-btn" onclick="selectAmount(this, 250)">$250</button>
-                            <button class="amount-btn" onclick="selectAmount(this, 500)">$500</button>
+                            <button class="amount-btn" onclick="selectAmount(this, 500)">₹500</button>
+                            <button class="amount-btn selected" onclick="selectAmount(this, 1000)">₹1000</button>
+                            <button class="amount-btn" onclick="selectAmount(this, 2000)">₹2000</button>
+                            <button class="amount-btn" onclick="selectAmount(this, 5000)">₹5000</button>
+                            <button class="amount-btn" onclick="selectAmount(this, 10000)">₹10000</button>
+                            <button class="amount-btn" onclick="selectAmount(this, 25000)">₹25000</button>
                         </div>
                         <div style="margin-top:.75rem; position:relative;">
                             <span
-                                style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--clr-text-3);font-weight:700;">$</span>
+                                style="position:absolute;left:1rem;top:50%;transform:translateY(-50%);color:var(--clr-text-3);font-weight:700;">₹</span>
                             <input id="customAmount" type="number" class="form-input" placeholder="Custom amount"
                                 style="padding-left:2rem;" min="1" oninput="updateSummary()" />
                         </div>
@@ -139,7 +139,7 @@
                             </div>
                             <div style="display:flex; justify-content:space-between; color:var(--clr-text-2);">
                                 <span>Amount</span>
-                                <strong id="summAmount" style="color:var(--clr-text);">$25</strong>
+                                <strong id="summAmount" style="color:var(--clr-text);">₹1000</strong>
                             </div>
                             <div style="display:flex; justify-content:space-between; color:var(--clr-text-2);">
                                 <span>Payment</span>

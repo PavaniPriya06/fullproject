@@ -43,8 +43,8 @@
             <!-- Hero -->
             <div class="page-hero fade-in-up">
                 <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
-                <h1 class="page-hero-title">🏛️ Verified <span class="text-gradient">Organizations</span></h1>
-                <p class="page-hero-sub">Discover transparent, impactful NGOs you can trust with your generosity.</p>
+                <h1 class="page-hero-title">🏛️ Vijayawada <span class="text-gradient">Trusts & NGOs</span></h1>
+                <p class="page-hero-sub">Support verified charitable organizations making real impact in Krishna District. Every donation helps build a stronger community.</p>
             </div>
 
             <!-- Search + Filter -->
@@ -54,11 +54,12 @@
                     <input type="text" id="orgSearch" placeholder="Search organizations…" oninput="filterOrgs()" />
                 </div>
                 <div class="filter-pills" id="orgFilters">
-                    <button class="pill active" onclick="setOrgFilter(this,'All')">All</button>
+                    <button class="pill active" onclick="setOrgFilter(this,'All')">🌐 All</button>
                     <button class="pill" onclick="setOrgFilter(this,'Education')">🎓 Education</button>
                     <button class="pill" onclick="setOrgFilter(this,'Healthcare')">🏥 Healthcare</button>
+                    <button class="pill" onclick="setOrgFilter(this,'Hunger Relief')">🍽️ Hunger Relief</button>
                     <button class="pill" onclick="setOrgFilter(this,'Environment')">🌿 Environment</button>
-                    <button class="pill" onclick="setOrgFilter(this,'Hunger')">🍽️ Hunger</button>
+                    <button class="pill" onclick="setOrgFilter(this,'Disaster Relief')">🆘 Disaster Relief</button>
                 </div>
             </div>
 
@@ -69,21 +70,29 @@
 
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/data/vijayawadaTrusts.js"></script>
     <script>
         const session = requireAuth();
         if (!session) throw new Error('Unauthenticated');
         renderHeaderProfile(session);
 
-        const ORGS = [
-            { id: 1, name: 'BrightFuture Trust', logo: '🎓', cat: 'Education', desc: 'Empowering underprivileged children with quality education, scholarships and vocational training.', beneficiaries: '45K+', funded: '$3.2M', rating: '4.9', verified: true },
-            { id: 2, name: 'HealTheWorld NGO', logo: '🏥', cat: 'Healthcare', desc: 'Delivering affordable healthcare through mobile clinics, free surgeries and rural health camps.', beneficiaries: '120K+', funded: '$8.1M', rating: '4.8', verified: true },
-            { id: 3, name: 'Green Earth Alliance', logo: '🌿', cat: 'Environment', desc: 'Fighting climate change through reforestation, clean energy projects and community eco-programs.', beneficiaries: '200K+', funded: '$5.6M', rating: '4.7', verified: true },
-            { id: 4, name: 'Feed The Nation', logo: '🍽️', cat: 'Hunger', desc: 'Ending hunger by running community kitchens, food banks and nutrition programs for families.', beneficiaries: '90K+', funded: '$2.4M', rating: '4.9', verified: true },
-            { id: 5, name: 'Scholar Seeds', logo: '📖', cat: 'Education', desc: 'Providing digital literacy and STEM education to children in remote and underserved communities.', beneficiaries: '22K+', funded: '$1.1M', rating: '4.6', verified: true },
-            { id: 6, name: 'Pure Water Project', logo: '💧', cat: 'Healthcare', desc: 'Building wells, purification systems and educating communities on water hygiene and sanitation.', beneficiaries: '55K+', funded: '$4.3M', rating: '4.8', verified: true },
-            { id: 7, name: 'EcoWarriors Foundation', logo: '☀️', cat: 'Environment', desc: 'Deploying solar, wind, and biogas energy to remote villages and educating on sustainable living.', beneficiaries: '18K+', funded: '$900K', rating: '4.7', verified: true },
-            { id: 8, name: 'NourishKids Trust', logo: '🥗', cat: 'Hunger', desc: 'Providing daily nutritious meals to schoolchildren, improving attendance and academic outcomes.', beneficiaries: '35K+', funded: '$1.8M', rating: '4.9', verified: true },
-        ];
+        // Convert Vijayawada trusts to organization format
+        const ORGS = typeof VIJAYAWADA_TRUSTS !== 'undefined' ? VIJAYAWADA_TRUSTS.map(trust => ({
+            id: trust.id,
+            name: trust.name,
+            logo: trust.logo,
+            cat: trust.category,
+            desc: trust.description,
+            beneficiaries: trust.beneficiaries,
+            funded: trust.totalFunded,
+            rating: trust.rating.toString(),
+            verified: trust.verified,
+            email: trust.email,
+            phone: trust.phone,
+            website: trust.website,
+            address: trust.address,
+            registrationNo: trust.registrationNo
+        })) : [];
 
         let activeOrgFilter = 'All';
 

@@ -3,7 +3,7 @@
    =========================================================
    Storage keys:
      dms_donation_records  → Master Table  (PK, user_id, category, created_at)
-     dms_food_donations    → Food_Donations   (rice_qty, veg_qty)
+     dms_food_donations    → Food_Donations   (rice_qty, veg_qty, fruits_qty)
      dms_clothes_donations → Clothes_Donations (target_age)
      dms_money_donations   → Money_Donations  (transaction_id, status)
      dms_notifications     → Donor notifications (approved/rejected alerts)
@@ -104,9 +104,10 @@
    * @param {number} vegetables Integer quantity (kg)
    * @returns {object} master record
    */
-  function saveFoodRecord(userId, rice, vegetables) {
+  function saveFoodRecord(userId, rice, vegetables, fruits) {
     const riceQty = parseInt(rice, 10);
     const vegQty  = parseInt(vegetables, 10);
+    const fruitsQty = parseInt(fruits, 10);
 
     /* ── Master Table insert ── */
     const masterRows = _load();
@@ -127,7 +128,8 @@
       id:          _genId('fd'),
       donation_id: record.id,   /* FK → Master Table */
       rice_qty:    riceQty,
-      veg_qty:     vegQty
+      veg_qty:     vegQty,
+      fruits_qty:  fruitsQty
     });
     _saveTable(FOOD_KEY, foodRows);
 
@@ -280,6 +282,60 @@
     return record;
   }
 
+  /**
+   * Create a money donation from payment code scanner form.
+   * Takes payment code, amount, and trust info.
+   *
+   * @param {string} userId       Donor user ID
+   * @param {string} trustId      Selected trust organization ID
+   * @param {number} amount       Donation amount
+   * @param {string} paymentCode  Scanned or entered payment code
+   * @returns {object} master record with attached payment info
+   */
+  function createMoney(userId, trustId, amount, paymentCode) {
+    const transactionId = 'TXN-' + Date.now();
+
+    /* ── Master Table insert ── */
+    const masterRows = _load();
+    const record = {
+      id:        _genId('dr'),
+      userId,
+      type:      'money',
+      createdAt: new Date().toISOString(),
+      trustId:   trustId,        /* Also store the trust on master */
+      approved:        null,      /* null = pending, true = approved, false = rejected */
+      donation_status: 'pending'  /* Enum: 'pending' | 'approved' | 'rejected' */
+    };
+    masterRows.unshift(record);
+    _save(masterRows);
+
+    /* ── Money_Donations insert ── */
+    const moneyRows = _loadTable(MONEY_KEY);
+    moneyRows.unshift({
+      id:             _genId('md'),
+      donation_id:    record.id,   /* FK → Master Table */
+      transaction_id: transactionId,
+      paymentCode:    paymentCode || '',
+      amount:         amount || 0,
+      qr_payload:     paymentCode, /* Keep for compatibility */
+      status:         true        /* Directly complete this record */
+    });
+    _saveTable(MONEY_KEY, moneyRows);
+
+    /* Attach for in-memory convenience */
+    record.transactionId = transactionId;
+    record.amount = amount;
+    record.paymentCode = paymentCode;
+
+    /* Verify commit and dispatch success */
+    if (_verifyCommit(record.id, MONEY_KEY)) {
+      _setThanksFlag(record);
+      _dispatchSuccess(record);
+    }
+
+    return record;
+  }
+
 
   /* ═══════════════════════════════════════════════════════
      PUBLIC API — Read methods
@@ -312,7 +368,7 @@
 
   /**
    * All Food_Donations rows (most-recent first).
-   * Schema: { id, donation_id(FK), rice_qty, veg_qty }
+   * Schema: { id, donation_id(FK), rice_qty, veg_qty, fruits_qty }
    */
   function getFoodDonations() {
     return _loadTable(FOOD_KEY);
@@ -470,14 +526,16 @@
    * @param {string} donationId
    * @param {number} rice
    * @param {number} veg
+   * @param {number} fruits
    * @returns {object|null} updated sub-table row
    */
-  function updateFoodRecord(donationId, rice, veg) {
+  function updateFoodRecord(donationId, rice, veg, fruits) {
     const rows = _loadTable(FOOD_KEY);
     const row  = rows.find(function (r) { return r.donation_id === donationId; });
     if (!row) return null;
-    row.rice_qty = parseInt(rice, 10);
-    row.veg_qty  = parseInt(veg,  10);
+    row.rice_qty   = parseInt(rice, 10);
+    row.veg_qty    = parseInt(veg,  10);
+    row.fruits_qty = parseInt(fruits, 10);
     _saveTable(FOOD_KEY, rows);
     return row;
   }
@@ -586,6 +644,7 @@
    * @returns {{
    *   rice_kg:     number,
    *   veg_kg:      number,
+   *   fruits_kg:   number,
    *   clothes:     Object<number,number>,  age → count
    *   money_count: number,
    *   total:       number
@@ -596,6 +655,7 @@
 
     var rice_kg     = 0;
     var veg_kg      = 0;
+    var fruits_kg   = 0;
     var clothes     = {};  /* target_age → donation count */
     var money_count = 0;
 
@@ -604,8 +664,9 @@
         var sub = _loadTable(FOOD_KEY).find(function (s) {
           return s.donation_id === r.id;
         }) || {};
-        rice_kg += (sub.rice_qty || 0);
-        veg_kg  += (sub.veg_qty  || 0);
+        rice_kg   += (sub.rice_qty   || 0);
+        veg_kg    += (sub.veg_qty    || 0);
+        fruits_kg += (sub.fruits_qty || 0);
 
       } else if (r.type === 'apparel') {
         var sub = _loadTable(CLOTHES_KEY).find(function (s) {
@@ -623,6 +684,7 @@
     return {
       rice_kg:     rice_kg,
       veg_kg:      veg_kg,
+      fruits_kg:   fruits_kg,
       clothes:     clothes,
       money_count: money_count,
       total:       records.length
@@ -639,6 +701,7 @@
     completeMoney,
     cancelPendingMoney,
     saveMoneyRecord,      /* legacy */
+    createMoney,          /* new */
 
     /* Read — Master Table */
     getRecordsByUser,
